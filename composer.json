@@ -16,5 +16,10 @@
             "name": "jacobemerick",
             "email": "jpemeric@gmail.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "Jacobemerick\\RecentActivityService\\": "src/"
+        }
+    }
 }
