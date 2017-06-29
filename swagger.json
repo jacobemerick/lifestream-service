@@ -1,0 +1,239 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "version": "0.1.0",
+        "title": "Recent Activity Service"
+    },
+    "produces": [
+        "application/json"
+    ],
+    "schemes": [
+        "http",
+        "https"
+    ],
+    "securityDefinitions": {
+        "basicAuth": {
+            "type": "basic"
+        }
+    },
+    "security": [
+        {
+            "basicAuth": []
+        }
+    ],
+    "paths": {
+        "/events": {
+            "get": {
+                "operationId": "getEvents",
+                "description": "Gets recent activity events.",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/PageNumber"
+                    },
+                    {
+                        "$ref": "#/parameters/PageSize"
+                    },
+                    {
+                        "$ref": "#/parameters/SortOrder"
+                    },
+                    {
+                        "$ref": "#/parameters/UserFilter"
+                    },
+                    {
+                        "$ref": "#/parameters/TypeFilter"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "$ref": "#/responses/EventList"
+                    },
+                    "default": {
+                        "$ref": "#/responses/Error"
+                    }
+                }
+            }
+        },
+        "/events/{event_id}": {
+            "parameters": [
+                {
+                    "$ref": "#/parameters/EventIdentifier"
+                }
+            ],
+            "get": {
+                "operationId": "getEvent",
+                "description": "Gets a single event.",
+                "responses": {
+                    "200": {
+                        "$ref": "#/responses/Event"
+                    },
+                    "default": {
+                        "$ref": "#/responses/Error"
+                    }
+                }
+            }
+        },
+        "/types": {
+            "parameters": [],
+            "get": {
+                "operationId": "getTypes",
+                "description": "Gets available event types.",
+                "responses": {
+                    "200": {
+                        "$ref": "#/responses/TypeList"
+                    },
+                    "default": {
+                        "$ref": "#/responses/Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "Event": {
+            "type": "object",
+            "required": [
+                "id",
+                "description",
+                "description_html",
+                "date",
+                "user",
+                "type"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "description_html": {
+                    "type": "string"
+                },
+                "metadata": {
+                    "type": "object"
+                },
+                "date": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "user": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "Type": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "Error": {
+            "type": "object",
+            "required": [
+                "type",
+                "status",
+                "code",
+                "message"
+            ],
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "error"
+                    ]
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "code": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "context": {
+                    "type": "object"
+                }
+            }
+        }
+    },
+    "parameters": {
+        "EventIdentifier": {
+            "name": "event_id",
+            "in": "path",
+            "description": "Event identifier",
+            "required": true,
+            "type": "string"
+        },
+        "PageNumber": {
+            "name": "page",
+            "in": "query",
+            "description": "Results page to return",
+            "type": "integer"
+        },
+        "PageSize": {
+            "name": "per_page",
+            "in": "query",
+            "description": "Results per response",
+            "type": "integer"
+        },
+        "SortOrder": {
+            "name": "order",
+            "in": "query",
+            "description": "Comma-separated list of order options",
+            "type": "string"
+        },
+        "TypeFilter": {
+            "name": "type",
+            "in": "query",
+            "description": "Type to restrict events",
+            "type": "string"
+        },
+        "UserFilter": {
+            "name": "user",
+            "in": "query",
+            "description": "User to restrict events",
+            "type": "string"
+        }
+    },
+    "responses": {
+        "Event": {
+            "description": "Single event resource.",
+            "schema": {
+                "$ref": "#/definitions/Event"
+            }
+        },
+        "EventList": {
+            "description": "List of event resources",
+            "schema": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/definitions/Event"
+                }
+            }
+        },
+        "TypeList": {
+            "description": "List of type resources",
+            "schema": {
+                "type": "array",
+                "items": {
+                    "$ref": "#/definitions/Type"
+                }
+            }
+        },
+        "Error": {
+            "description": "Error",
+            "schema": {
+                "$ref": "#/definitions/Error"
+            }
+        }
+    }
+}
