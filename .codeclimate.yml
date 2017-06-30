@@ -1,0 +1,15 @@
+---
+engines:
+  duplication:
+    enabled: false
+  fixme:
+    enabled: true
+  phpcodesniffer:
+    enabled: true
+  phpmd:
+    enabled: true
+ratings:
+  paths:
+  - src/**
+exclude_paths:
+- db/
