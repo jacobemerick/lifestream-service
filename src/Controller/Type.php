@@ -2,7 +2,7 @@
 
 namespace Jacobemerick\LifestreamService\Controller;
 
-class Types
+class Type
 {
 
     public function __construct() {}
