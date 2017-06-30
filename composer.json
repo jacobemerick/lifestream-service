@@ -1,6 +1,6 @@
 {
-    "name": "jemerick/recent-activity-service",
-    "description": "Dandy little service to wrap recent activity events",
+    "name": "jemerick/lifestream-service",
+    "description": "Dandy little service to wrap lifestream events",
     "require": {
         "php": "^7.1",
         "avalanche-development/peel": "^0.3.0",
@@ -19,7 +19,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "Jacobemerick\\RecentActivityService\\": "src/"
+            "Jacobemerick\\LifestreamService\\": "src/"
         }
     }
 }

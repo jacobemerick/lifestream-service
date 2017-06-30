@@ -1,2 +1,2 @@
-# recent-activity-service
-Dandy little service to wrap recent activity events
+# lifestream-service
+Dandy little service to wrap lifestream events

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\RecentActivityService\Controller;
+namespace Jacobemerick\LifestreamService\Controller;
 
 class Event
 {
