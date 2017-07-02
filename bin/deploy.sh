@@ -7,7 +7,7 @@ if [ "${TRAVIS_PULL_REQUEST}" == "false" ] && [ "${TRAVIS_BRANCH}" == "master" ]
 
   echo "Rebuilds dependencies"
   rm -rf vendor
-  composer install --no-dev --no-interaction
+  composer install --quiet --no-dev --no-interaction
 
   echo "Writing custom gitignore for build"
   echo "# Build Ignores" > .gitignore
