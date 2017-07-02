@@ -23,7 +23,7 @@ if [ "${TRAVIS_PULL_REQUEST}" == "false" ] && [ "${TRAVIS_BRANCH}" == "master" ]
   git remote add deploy $DEPLOY_URI
   git config user.name $DEPLOY_USER
   git config user.email $DEPLOY_EMAIL
-  git add --all . > /dev/null
+  git add --all . >> /dev/null
   git commit -m "Deploy from Travis - build {$TRAVIS_BUILD_NUMBER}"
 
   echo "Sets up permissions"
