@@ -6,11 +6,11 @@
         "avalanche-development/peel": "^0.3.0",
         "avalanche-development/talus": "^1.8",
         "avalanche-development/swagger-router-middleware": "^1.2",
-        "codeclimate/php-test-reporter": "^0.4.4",
         "container-interop/container-interop": "^1.2",
         "aura/di": "^3.2"
     },
     "require-dev": {
+        "codeclimate/php-test-reporter": "^0.4.4",
         "phpunit/phpunit": "^6.2"
     },
     "license": "MIT",
