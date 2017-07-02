@@ -7,3 +7,5 @@ install:
 script:
 - vendor/bin/phpunit --testsuite unit --coverage-clover build/logs/clover.xml
 - bash bin/codeclimate.sh
+after_success:
+- bash bin/deploy.sh
