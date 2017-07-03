@@ -27,9 +27,11 @@ class Type
      */
     public function getTypes(Request $request, Response $response)
     {
-        $types = [
-            'message' => 'hello world',
-        ];
+        $types = $this->container
+            ->get('typeModel')
+            ->getTypes();
+
+        $types = array_map($this->container->get('typeSerializer'), $types);
         $types = json_encode($types);
         $response->getBody()->write($types);
         return $response;

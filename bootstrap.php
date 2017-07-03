@@ -8,6 +8,7 @@ $startMemory = memory_get_usage();
 require_once __DIR__ . '/vendor/autoload.php';
 
 use Aura\Di\ContainerBuilder;
+use Aura\Sql\ExtendedPdo;
 use AvalancheDevelopment\Talus\Talus;
 
 // load the config for the application
@@ -34,6 +35,18 @@ $di->set('datetime', new DateTime(
     'now',
     new DateTimeZone('America/Phoenix')
 ));
+
+// set up db and models
+$di->set('dbal', $di->lazyNew(
+    'Aura\Sql\ExtendedPdo',
+    (array) $config->database
+));
+$di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
+
+$di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
+
+// set up serializers
+$di->set('typeSerializer', $di->lazyNew('Jacobemerick\LifestreamService\Serializer\Type'));
 
 // set up swagger
 $handle = fopen(__DIR__ . '/swagger.json', 'r');
