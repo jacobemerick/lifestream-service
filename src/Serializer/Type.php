@@ -12,7 +12,6 @@ class Type
     public function __invoke(array $type)
     {
         return [
-            'id' => $type['id'],
             'name' => $type['name'],
         ];
     }

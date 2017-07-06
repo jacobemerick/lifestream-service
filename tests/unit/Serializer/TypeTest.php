@@ -25,7 +25,6 @@ class TypeTest extends TestCase
         $result = $serializer($type);
 
         $this->assertSame([
-            'id' => 1,
             'name' => 'type one',
         ], $result);
     }
