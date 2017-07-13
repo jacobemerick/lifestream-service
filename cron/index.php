@@ -44,4 +44,32 @@ $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
-// switch based on flag, i guess
+// set up clients
+$di->set('blogClient', $di->lazyNew(
+    'GuzzleHttp\Client',
+    [
+        'baseUri' => $config->blog->baseUri,
+        'headers' => [
+            'User-Agent' => 'lifestream-service/1.0',
+        ],
+    ]
+));
+
+// switch to determine which cron to run
+$opts = getopt('s:');
+if (!$opts['s']) {
+    throw new Exception('Must specify a -s flag to determine which cron to run');
+}
+
+use Jacobemerick\LifestreamService\Cron;
+
+switch ($opts['s']) {
+    case 'blog':
+        $cron = new Cron\Blog($di);
+        break;
+    default:
+        throw new Exception('Unrecognized cron passed in');
+        break;
+}
+
+$cron->run();
