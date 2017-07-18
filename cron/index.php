@@ -30,10 +30,8 @@ $builder = new ContainerBuilder();
 $di = $builder->newInstance($builder::AUTO_RESOLVE);
 
 // global time object
-$di->set('datetime', new DateTime(
-    'now',
-    new DateTimeZone('America/Phoenix')
-));
+$di->set('timezone', new DateTimeZone('America/Phoenix'));
+$di->set('datetime', new DateTime('now', new DateTimeZone('America/Phoenix')));
 
 // set up db and models
 $di->set('dbal', $di->lazyNew(
@@ -42,17 +40,19 @@ $di->set('dbal', $di->lazyNew(
 ));
 $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
+$di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
 // set up clients
 $di->set('blogClient', $di->lazyNew(
     'GuzzleHttp\Client',
-    [
-        'baseUri' => $config->blog->baseUri,
+    [[
+        'base_uri' => $config->blog->baseUri,
         'headers' => [
             'User-Agent' => 'lifestream-service/1.0',
+            'Accept' => 'application/xml',
         ],
-    ]
+    ]]
 ));
 
 // switch to determine which cron to run
