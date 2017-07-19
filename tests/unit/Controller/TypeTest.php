@@ -9,6 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\StreamInterface as Stream;
+use ReflectionClass;
 
 class TypeTest extends TestCase
 {
@@ -51,7 +52,16 @@ class TypeTest extends TestCase
         $mockResponse->method('getBody')
             ->willReturn($this->createMock(Stream::class));
 
-        $type = new Type($mockContainer);
+        $type = $this->getMockBuilder(Type::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedType = new ReflectionClass(Type::class);
+        $reflectedContainerProperty = $reflectedType->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($type, $mockContainer);
+
         $type->getTypes($mockRequest, $mockResponse);
     }
 
@@ -87,7 +97,16 @@ class TypeTest extends TestCase
         $mockResponse->method('getBody')
             ->willReturn($this->createMock(Stream::class));
 
-        $type = new Type($mockContainer);
+        $type = $this->getMockBuilder(Type::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedType = new ReflectionClass(Type::class);
+        $reflectedContainerProperty = $reflectedType->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($type, $mockContainer);
+
         $type->getTypes($mockRequest, $mockResponse);
     }
 
@@ -126,7 +145,16 @@ class TypeTest extends TestCase
         $mockResponse->method('getBody')
             ->willReturn($mockStream);
 
-        $type = new Type($mockContainer);
+        $type = $this->getMockBuilder(Type::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedType = new ReflectionClass(Type::class);
+        $reflectedContainerProperty = $reflectedType->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($type, $mockContainer);
+
         $type->getTypes($mockRequest, $mockResponse);
     }
 
@@ -151,7 +179,16 @@ class TypeTest extends TestCase
         $mockResponse->method('getBody')
             ->willReturn($this->createMock(Stream::class));
 
-        $type = new Type($mockContainer);
+        $type = $this->getMockBuilder(Type::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedType = new ReflectionClass(Type::class);
+        $reflectedContainerProperty = $reflectedType->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($type, $mockContainer);
+
         $result = $type->getTypes($mockRequest, $mockResponse);
 
         $this->assertSame($mockResponse, $result);

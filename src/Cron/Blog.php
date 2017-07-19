@@ -42,7 +42,7 @@ class Blog implements CronInterface
      */
     protected function fetchPosts(Client $client)
     {
-        $response = $client->get('rss.xml');
+        $response = $client->request('GET', 'rss.xml');
         if ($response->getStatusCode() !== 200) {
             throw new Exception("Error while trying to fetch rss feed: {$response->getStatusCode()}");
         }
