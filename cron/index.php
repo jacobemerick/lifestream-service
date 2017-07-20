@@ -40,6 +40,7 @@ $di->set('dbal', $di->lazyNew(
 ));
 $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
+$di->set('blogCommentModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\BlogComment'));
 $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
@@ -66,6 +67,9 @@ use Jacobemerick\LifestreamService\Cron;
 switch ($opts['s']) {
     case 'blog':
         $cron = new Cron\Blog($di);
+        break;
+    case 'blogComment':
+        $cron = new Cron\BlogComment($di);
         break;
     default:
         throw new Exception('Unrecognized cron passed in');
