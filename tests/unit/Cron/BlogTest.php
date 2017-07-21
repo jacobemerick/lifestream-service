@@ -31,7 +31,7 @@ class BlogTest extends TestCase
         $this->assertInstanceOf(CronInterface::class, $cron);
     }
 
-    public function testConstructSetsExtendedPdo()
+    public function testConstructSetsContainer()
     {
         $mockContainer = $this->createMock(Container::class);
         $cron = new Blog($mockContainer);
