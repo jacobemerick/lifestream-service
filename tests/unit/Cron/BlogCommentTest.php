@@ -4,13 +4,19 @@ namespace Jacobemerick\LifestreamService\Cron;
 
 use DateTime;
 use DateTimeZone;
+use Exception;
+use ReflectionClass;
+use SimpleXMLElement;
+
+use PHPUnit\Framework\TestCase;
+
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\BlogComment as BlogCommentModel;
-use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface as Response;
-use ReflectionClass;
-use SimpleXMLElement;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface as Logger;
+use Psr\Log\NullLogger;
 
 class BlogCommentTest extends TestCase
 {
@@ -31,12 +37,28 @@ class BlogCommentTest extends TestCase
         $this->assertInstanceOf(CronInterface::class, $cron);
     }
 
+    public function testIsInstanceOfLoggerAwareInterface()
+    {
+        $mockContainer = $this->createMock(Container::class);
+        $cron = new BlogComment($mockContainer);
+
+        $this->assertInstanceOf(LoggerAwareInterface::class, $cron);
+    }
+
     public function testConstructSetsContainer()
     {
         $mockContainer = $this->createMock(Container::class);
         $cron = new BlogComment($mockContainer);
 
         $this->assertAttributeSame($mockContainer, 'container', $cron);
+    }
+
+    public function testConstructSetsNullLogger()
+    {
+        $mockContainer = $this->createMock(Container::class);
+        $cron = new BlogComment($mockContainer);
+
+        $this->assertAttributeInstanceOf(NullLogger::class, 'logger', $cron);
     }
 
     public function testRunFetchesComments()
@@ -48,6 +70,8 @@ class BlogCommentTest extends TestCase
             ->will($this->returnValueMap([
                 [ 'blogClient', $mockClient ],
             ]));
+
+        $mockLogger = $this->createMock(Logger::class);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -67,9 +91,62 @@ class BlogCommentTest extends TestCase
             ->method('insertComment');
 
         $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
         $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
+
+        $blogComment->run();
+    }
+ 
+    public function testRunLogsThrownExceptionFromFetchComments()
+    {
+        $mockExceptionMessage = 'Failed to fetch comments';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockClient = $this->createMock(Client::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo($mockExceptionMessage));
+
+        $blogComment = $this->getMockBuilder(BlogComment::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkCommentExists',
+                'fetchComments',
+                'insertComment',
+            ])
+            ->getMock();
+        $blogComment->expects($this->never())
+            ->method('checkCommentExists');
+        $blogComment->method('fetchComments')
+            ->will($this->throwException($mockException));
+        $blogComment->expects($this->never())
+            ->method('insertComment');
+
+        $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
+        $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
 
         $blogComment->run();
     }
@@ -77,8 +154,8 @@ class BlogCommentTest extends TestCase
     public function testRunChecksIfEachCommentExists()
     {
         $comments = [
-            new SimpleXMLElement('<guid>http://site.com/some-post#comment-123</guid>'),
-            new SimpleXMLElement('<guid>http://site.com/some-post#comment-456</guid>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post#comment-123</guid></rss>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post#comment-456</guid></rss>'),
         ];
 
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
@@ -90,6 +167,12 @@ class BlogCommentTest extends TestCase
                 [ 'blogClient', $mockClient ],
                 [ 'blogCommentModel', $mockBlogCommentModel ],
             ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -113,9 +196,14 @@ class BlogCommentTest extends TestCase
             ->method('insertComment');
 
         $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
         $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
 
         $blogComment->run();
     }
@@ -123,7 +211,7 @@ class BlogCommentTest extends TestCase
     public function testRunPassesOntoInsertIfCommentNotExists()
     {
         $comments = [
-            new SimpleXMLElement('<guid>http://site.com/some-post#comment-123</guid>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post#comment-123</guid></rss>'),
         ];
 
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
@@ -137,6 +225,10 @@ class BlogCommentTest extends TestCase
                 [ 'blogCommentModel', $mockBlogCommentModel ],
                 [ 'timezone', $mockTimezone ],
             ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -153,7 +245,6 @@ class BlogCommentTest extends TestCase
             )
             ->willReturn(false);
         $blogComment->method('fetchComments')
-            ->with($mockClient)
             ->willReturn($comments);
         $blogComment->expects($this->exactly(count($comments)))
             ->method('insertComment')
@@ -162,9 +253,136 @@ class BlogCommentTest extends TestCase
             );
 
         $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
         $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
+
+        $blogComment->run();
+    }
+
+    public function testRunLogsThrownExceptionFromInsertComment()
+    {
+        $mockExceptionMessage = 'Failed to insert comment';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $comments = [
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post#comment-123</guid></rss>'),
+        ];
+
+        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+                [ 'blogCommentModel', $mockBlogCommentModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+
+        $blogComment = $this->getMockBuilder(BlogComment::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkCommentExists',
+                'fetchComments',
+                'insertComment',
+            ])
+            ->getMock();
+        $blogComment->expects($this->exactly(count($comments)))
+            ->method('checkCommentExists')
+            ->withConsecutive(
+                [ $mockBlogCommentModel, $comments[0]->guid ]
+            )
+            ->willReturn(false);
+        $blogComment->method('fetchComments')
+            ->willReturn($comments);
+        $blogComment->method('insertComment')
+            ->will($this->throwException($mockException));
+
+        $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
+        $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
+
+        $blogComment->run();
+    }
+
+    public function testRunLogsInsertedCommentIfSuccessful()
+    {
+        $comments = [
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post#comment-123</guid></rss>'),
+        ];
+
+        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+                [ 'blogCommentModel', $mockBlogCommentModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+        $mockLogger->expects($this->exactly($this->count($comments)))
+            ->method('debug')
+            ->with(
+                $this->equalTo('Inserted new blog comment: http://site.com/some-post#comment-123')
+            );
+
+        $blogComment = $this->getMockBuilder(BlogComment::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkCommentExists',
+                'fetchComments',
+                'insertComment',
+            ])
+            ->getMock();
+        $blogComment->expects($this->exactly(count($comments)))
+            ->method('checkCommentExists')
+            ->withConsecutive(
+                [ $mockBlogCommentModel, $comments[0]->guid ]
+            )
+            ->willReturn(false);
+        $blogComment->method('fetchComments')
+            ->willReturn($comments);
+        $blogComment->expects($this->exactly(count($comments)))
+            ->method('insertComment')
+            ->withConsecutive(
+                [ $mockBlogCommentModel, $comments[0], $mockTimezone ]
+            );
+
+        $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+
+        $reflectedContainerProperty = $reflectedBlogComment->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blogComment, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlogComment->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blogComment, $mockLogger);
 
         $blogComment->run();
     }
@@ -358,6 +576,11 @@ class BlogCommentTest extends TestCase
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
 
+        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockComment = new SimpleXMLElement($mockComment);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
         $mockBlogCommentModel->expects($this->once())
             ->method('insertComment')
@@ -365,12 +588,8 @@ class BlogCommentTest extends TestCase
                 $this->anything(),
                 $this->equalTo($dateTime),
                 $this->anything()
-            );
-
-        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
-        $mockComment = new SimpleXMLElement($mockComment);
-
-        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+            )
+            ->willReturn(1);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -393,6 +612,9 @@ class BlogCommentTest extends TestCase
         $date = '2016-06-30 12:00:00 +000';
         $timezone = 'America/Phoenix'; // always +700, no DST
 
+        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockComment = new SimpleXMLElement($mockComment);
+
         $dateTimeZone = new DateTimeZone($timezone);
         $dateTime = new DateTime($date);
         $dateTime->setTimezone($dateTimeZone);
@@ -406,10 +628,8 @@ class BlogCommentTest extends TestCase
                     return $param->getTimeZone()->getName() == $dateTime->getTimeZone()->getName();
                 }),
                 $this->anything()
-            );
-
-        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
-        $mockComment = new SimpleXMLElement($mockComment);
+            )
+            ->willReturn(1);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -437,6 +657,8 @@ class BlogCommentTest extends TestCase
         $comment = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
         $comment = new SimpleXMLElement($comment);
 
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
         $mockBlogCommentModel->expects($this->once())
             ->method('insertComment')
@@ -444,9 +666,8 @@ class BlogCommentTest extends TestCase
                 $this->equalTo($permalink),
                 $this->equalTo($dateTime),
                 $this->equalTo(json_encode($comment))
-            );
-
-        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+            )
+            ->willReturn(1);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -464,21 +685,91 @@ class BlogCommentTest extends TestCase
         ]);
     }
 
-    public function testInsertCommentReturnsResultFromBlogCommentModel()
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Failed to insert comment
+     */
+    public function testInsertCommentThrowsExceptionIfModelThrows()
     {
-        $expectedResult = true;
+        $exception = new Exception('Failed to insert comment');
 
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
-
-        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
-        $mockBlogCommentModel->method('insertComment')
-            ->willReturn($expectedResult);
 
         $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
         $mockComment = new SimpleXMLElement($mockComment);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
+        $mockBlogCommentModel->method('insertComment')
+            ->will($this->throwException($exception));
+
+        $blogComment = $this->getMockBuilder(BlogComment::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+        $reflectedInsertCommentMethod = $reflectedBlogComment->getMethod('insertComment');
+        $reflectedInsertCommentMethod->setAccessible(true);
+
+        $reflectedInsertCommentMethod->invokeArgs($blogComment, [
+            $mockBlogCommentModel,
+            $mockComment,
+            $mockDateTimeZone,
+        ]);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Error while trying to insert new comment: http://site.com/some-post#comment-123
+     */
+    public function testInsertCommentThrowsExceptionIfNothingInserted()
+    {
+        $date = '2016-06-30 12:00:00';
+        $dateTime = new DateTime($date);
+
+        $permalink = 'http://site.com/some-post#comment-123';
+
+        $mockComment = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
+        $mockComment = new SimpleXMLElement($mockComment);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
+        $mockBlogCommentModel->method('insertComment')
+            ->willReturn(0);
+
+        $blogComment = $this->getMockBuilder(BlogComment::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedBlogComment = new ReflectionClass(BlogComment::class);
+        $reflectedInsertCommentMethod = $reflectedBlogComment->getMethod('insertComment');
+        $reflectedInsertCommentMethod->setAccessible(true);
+
+        $reflectedInsertCommentMethod->invokeArgs($blogComment, [
+            $mockBlogCommentModel,
+            $mockComment,
+            $mockDateTimeZone,
+        ]);
+    }
+
+    public function testInsertCommentReturnsTrueIfOneRecordIsAffected()
+    {
+        $date = '2016-06-30 12:00:00';
+        $dateTime = new DateTime($date);
+
+        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockComment = new SimpleXMLElement($mockComment);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
+        $mockBlogCommentModel->method('insertComment')
+            ->willReturn(1);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -495,6 +786,6 @@ class BlogCommentTest extends TestCase
             $mockDateTimeZone,
         ]);
 
-        $this->assertSame($expectedResult, $result);
+        $this->assertTrue($result);
     }
 }

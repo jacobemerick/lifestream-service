@@ -71,6 +71,8 @@ class BlogTest extends TestCase
                 [ 'blogClient', $mockClient ],
             ]));
 
+        $mockLogger = $this->createMock(Logger::class);
+
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
             ->setMethods([
@@ -89,9 +91,14 @@ class BlogTest extends TestCase
             ->method('insertPost');
 
         $reflectedBlog = new ReflectionClass(Blog::class);
+
         $reflectedContainerProperty = $reflectedBlog->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
 
         $blog->run();
     }
@@ -126,8 +133,7 @@ class BlogTest extends TestCase
             ->getMock();
         $blog->expects($this->never())
             ->method('checkPostExists');
-        $blog->expects($this->once())
-            ->method('fetchPosts')
+        $blog->method('fetchPosts')
             ->will($this->throwException($mockException));
         $blog->expects($this->never())
             ->method('insertPost');
@@ -752,8 +758,6 @@ class BlogTest extends TestCase
 
     public function testInsertPostReturnsTrueIfOneRecordIsAffected()
     {
-        $expectedResult = true;
-
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
 
@@ -781,6 +785,6 @@ class BlogTest extends TestCase
             $mockDateTimeZone,
         ]);
 
-        $this->assertSame($expectedResult, $result);
+        $this->assertTrue($result);
     }
 }

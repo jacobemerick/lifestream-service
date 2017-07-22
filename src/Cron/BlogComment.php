@@ -5,13 +5,19 @@ namespace Jacobemerick\LifestreamService\Cron;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use SimpleXMLElement;
+
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\BlogComment as BlogCommentModel;
-use SimpleXMLElement;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
-class BlogComment implements CronInterface
+class BlogComment implements CronInterface, LoggerAwareInterface
 {
+
+    use LoggerAwareTrait;
 
     /** @var Container */
     protected $container;
@@ -22,11 +28,19 @@ class BlogComment implements CronInterface
     public function __construct(Container $container)
     {
         $this->container = $container;
+ 
+        $this->logger = new NullLogger;
     }
 
     public function run()
     {
-        $comments = $this->fetchComments($this->container->get('blogClient'));
+        try {
+            $comments = $this->fetchComments($this->container->get('blogClient'));
+        } catch (Exception $exception) {
+            $this->logger->error($exception->getMessage());
+            return;
+        }
+
         foreach ($comments as $comment) {
             $commentExists = $this->checkCommentExists(
                 $this->container->get('blogCommentModel'),
@@ -36,11 +50,18 @@ class BlogComment implements CronInterface
                 continue;
             }
 
-            $this->insertComment(
-                $this->container->get('blogCommentModel'),
-                $comment,
-                $this->container->get('timezone')
-            );
+            try {
+                $this->insertComment(
+                    $this->container->get('blogCommentModel'),
+                    $comment,
+                    $this->container->get('timezone')
+                );
+            } catch (Exception $exception) {
+                $this->logger->error($exception->getMessage());
+                return;
+            }
+
+            $this->logger->debug("Inserted new blog comment: {$comment->guid}");
         }
     }
 
@@ -84,6 +105,11 @@ class BlogComment implements CronInterface
         $datetime = new DateTime($comment->pubDate);
         $datetime->setTimezone($timezone);
 
-        return $blogCommentModel->insertComment((string) $comment->guid, $datetime, json_encode($comment));
+        $result = $blogCommentModel->insertComment((string) $comment->guid, $datetime, json_encode($comment));
+        if ($result !== 1) {
+            throw new Exception("Error while trying to insert new comment: {$comment->guid}");
+        }
+
+        return true;
     }
 }
