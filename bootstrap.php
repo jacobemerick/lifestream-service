@@ -48,6 +48,23 @@ $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'))
 // set up serializers
 $di->set('typeSerializer', $di->lazyNew('Jacobemerick\LifestreamService\Serializer\Type'));
 
+// set up logger
+$di->set('logger', $di->lazyNew(
+    'Monolog\Logger',
+    [
+        'name' => 'default',
+    ],
+    [
+        'pushHandler' => $di->lazyNew(
+            'Monolog\Handler\StreamHandler',
+            [
+                'stream' => __DIR__ . '/logs/api.log',
+                'level' => Monolog\Logger::DEBUG,
+            ]
+        ),
+    ]
+));
+
 // set up swagger
 $handle = fopen(__DIR__ . '/swagger.json', 'r');
 $swagger = '';
@@ -63,6 +80,7 @@ if (json_last_error() !== JSON_ERROR_NONE) {
 }
 
 $talus = new Talus($swagger);
+$talus->setLogger($di->get('logger'));
 
 // controllers
 use Jacobemerick\LifestreamService\Controller;
@@ -72,3 +90,9 @@ $talus->addController('getTypes', function ($req, $res) use ($di) {
 });
 
 $talus->run();
+
+$di->get('logger')->addInfo('Runtime stats', [
+    'request' => $_SERVER['REQUEST_URI'],
+    'time' => (microtime(true) - $startTime),
+    'memory' => (memory_get_usage() - $startMemory),
+]);

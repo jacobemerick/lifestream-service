@@ -9,7 +9,8 @@
         "container-interop/container-interop": "^1.2",
         "aura/di": "^3.2",
         "aura/sql": "^2.5",
-        "guzzlehttp/guzzle": "^6.3"
+        "guzzlehttp/guzzle": "^6.3",
+        "monolog/monolog": "^1.23"
     },
     "require-dev": {
         "codeclimate/php-test-reporter": "^0.4.4",
