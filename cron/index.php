@@ -62,6 +62,23 @@ if (!$opts['s']) {
     throw new Exception('Must specify a -s flag to determine which cron to run');
 }
 
+// set up logger
+$di->set('logger', $di->lazyNew(
+    'Monolog\Logger',
+    [
+        'name' => 'default',
+    ],
+    [
+        'pushHandler' => $di->lazyNew(
+            'Monolog\Handler\StreamHandler',
+            [
+                'stream' => __DIR__ . "/../logs/{$opts['s']}.log",
+                'level' => Monolog\Logger::DEBUG,
+            ]
+        ),
+    ]
+));
+
 use Jacobemerick\LifestreamService\Cron;
 
 switch ($opts['s']) {
@@ -76,4 +93,10 @@ switch ($opts['s']) {
         break;
 }
 
+$cron->setLogger($di->get('logger'));
 $cron->run();
+
+$di->get('logger')->addInfo('Runtime stats', [
+    'time' => (microtime(true) - $startTime),
+    'memory' => (memory_get_usage() - $startMemory),
+]);

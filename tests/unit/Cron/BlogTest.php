@@ -122,6 +122,8 @@ class BlogTest extends TestCase
 
     public function testRunPassesOntoInsertIfPostNotExists()
     {
+        $this->markTestIncomplete();
+
         $posts = [
             new SimpleXMLElement('<guid>http://site.com/some-post</guid>'),
         ];

@@ -5,13 +5,20 @@ namespace Jacobemerick\LifestreamService\Cron;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use SimpleXMLElement;
+
+
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Blog as BlogModel;
-use SimpleXMLElement;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 
-class Blog implements CronInterface
+class Blog implements CronInterface, LoggerAwareInterface
 {
+
+    use LoggerAwareTrait;
 
     /** @var Container */
     protected $container;
@@ -22,23 +29,43 @@ class Blog implements CronInterface
     public function __construct(Container $container)
     {
         $this->container = $container;
+
+        $this->logger = new NullLogger;
     }
 
     public function run()
     {
-        $posts = $this->fetchPosts($this->container->get('blogClient'));
+        try {
+            $posts = $this->fetchPosts($this->container->get('blogClient'));
+        } catch (Exception $exception) {
+            $this->logger->error($exception->getMessage());
+            return;
+        }
+
         foreach ($posts as $post) {
             $postExists = $this->checkPostExists($this->container->get('blogModel'), (string) $post->guid);
             if ($postExists) {
                 continue;
             }
 
-            $this->insertPost($this->container->get('blogModel'), $post, $this->container->get('timezone'));
+            try {
+                $this->insertPost(
+                    $this->container->get('blogModel'),
+                    $post,
+                    $this->container->get('timezone')
+                );
+            } catch (Exception $exception) {
+                $this->logger->error($exception->getMessage());
+                return;
+            }
+
+            $this->logger->debug("Inserted new blog post: {$post->guid}");
         }
     }
 
     /**
      * @param Client $client
+     * @return array
      */
     protected function fetchPosts(Client $client)
     {
