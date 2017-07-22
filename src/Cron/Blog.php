@@ -7,7 +7,6 @@ use DateTimeZone;
 use Exception;
 use SimpleXMLElement;
 
-
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Blog as BlogModel;

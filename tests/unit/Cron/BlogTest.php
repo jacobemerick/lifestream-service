@@ -4,13 +4,19 @@ namespace Jacobemerick\LifestreamService\Cron;
 
 use DateTime;
 use DateTimeZone;
+use Exception;
+use ReflectionClass;
+use SimpleXMLElement;
+
+use PHPUnit\Framework\TestCase;
+
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Blog as BlogModel;
-use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface as Response;
-use ReflectionClass;
-use SimpleXMLElement;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface as Logger;
+use Psr\Log\NullLogger;
 
 class BlogTest extends TestCase
 {
@@ -31,12 +37,28 @@ class BlogTest extends TestCase
         $this->assertInstanceOf(CronInterface::class, $cron);
     }
 
+    public function testIsInstanceOfLoggerAwareInterface()
+    {
+        $mockContainer = $this->createMock(Container::class);
+        $cron = new Blog($mockContainer);
+
+        $this->assertInstanceOf(LoggerAwareInterface::class, $cron);
+    }
+
     public function testConstructSetsContainer()
     {
         $mockContainer = $this->createMock(Container::class);
         $cron = new Blog($mockContainer);
 
         $this->assertAttributeSame($mockContainer, 'container', $cron);
+    }
+
+    public function testConstructSetsNullLogger()
+    {
+        $mockContainer = $this->createMock(Container::class);
+        $cron = new Blog($mockContainer);
+
+        $this->assertAttributeInstanceOf(NullLogger::class, 'logger', $cron);
     }
 
     public function testRunFetchesPosts()
@@ -74,11 +96,60 @@ class BlogTest extends TestCase
         $blog->run();
     }
 
+    public function testRunLogsThrownExceptionsFromFetchPosts()
+    {
+        $mockExceptionMessage = 'Failed to fetch posts';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockClient = $this->createMock(Client::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo($mockExceptionMessage));
+
+        $blog = $this->getMockBuilder(Blog::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkPostExists',
+                'fetchPosts',
+                'insertPost',
+            ])
+            ->getMock();
+        $blog->expects($this->never())
+            ->method('checkPostExists');
+        $blog->expects($this->once())
+            ->method('fetchPosts')
+            ->will($this->throwException($mockException));
+        $blog->expects($this->never())
+            ->method('insertPost');
+
+        $reflectedBlog = new ReflectionClass(Blog::class);
+
+        $reflectedContainerProperty = $reflectedBlog->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
+
+        $blog->run();
+    }
+
     public function testRunChecksIfEachPostExists()
     {
         $posts = [
-            new SimpleXMLElement('<guid>http://site.com/some-post</guid>'),
-            new SimpleXMLElement('<guid>http://site.com/some-other-post</guid>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post</guid></rss>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-other-post</guid></rss>'),
         ];
 
         $mockBlogModel = $this->createMock(BlogModel::class);
@@ -90,6 +161,12 @@ class BlogTest extends TestCase
                 [ 'blogClient', $mockClient ],
                 [ 'blogModel', $mockBlogModel ],
             ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -107,25 +184,27 @@ class BlogTest extends TestCase
             )
             ->willReturn(true);
         $blog->method('fetchPosts')
-            ->with($mockClient)
             ->willReturn($posts);
         $blog->expects($this->never())
             ->method('insertPost');
 
         $reflectedBlog = new ReflectionClass(Blog::class);
+
         $reflectedContainerProperty = $reflectedBlog->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
 
         $blog->run();
     }
 
     public function testRunPassesOntoInsertIfPostNotExists()
     {
-        $this->markTestIncomplete();
-
         $posts = [
-            new SimpleXMLElement('<guid>http://site.com/some-post</guid>'),
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post</guid></rss>'),
         ];
 
         $mockBlogModel = $this->createMock(BlogModel::class);
@@ -139,6 +218,10 @@ class BlogTest extends TestCase
                 [ 'blogModel', $mockBlogModel ],
                 [ 'timezone', $mockTimezone ],
             ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -155,7 +238,6 @@ class BlogTest extends TestCase
             )
             ->willReturn(false);
         $blog->method('fetchPosts')
-            ->with($mockClient)
             ->willReturn($posts);
         $blog->expects($this->exactly(count($posts)))
             ->method('insertPost')
@@ -164,9 +246,136 @@ class BlogTest extends TestCase
             );
 
         $reflectedBlog = new ReflectionClass(Blog::class);
+
         $reflectedContainerProperty = $reflectedBlog->getProperty('container');
         $reflectedContainerProperty->setAccessible(true);
         $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
+
+        $blog->run();
+    }
+
+    public function testRunLogsThrownExceptionFromInsertPost()
+    {
+        $mockExceptionMessage = 'Failed to insert post';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $posts = [
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post</guid></rss>'),
+        ];
+
+        $mockBlogModel = $this->createMock(BlogModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+                [ 'blogModel', $mockBlogModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+
+        $blog = $this->getMockBuilder(Blog::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkPostExists',
+                'fetchPosts',
+                'insertPost',
+            ])
+            ->getMock();
+        $blog->expects($this->exactly(count($posts)))
+            ->method('checkPostExists')
+            ->withConsecutive(
+                [ $mockBlogModel, $posts[0]->guid ]
+            )
+            ->willReturn(false);
+        $blog->method('fetchPosts')
+            ->willReturn($posts);
+        $blog->method('insertPost')
+            ->will($this->throwException($mockException));
+
+        $reflectedBlog = new ReflectionClass(Blog::class);
+
+        $reflectedContainerProperty = $reflectedBlog->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
+
+        $blog->run();
+    }
+
+    public function testRunLogsInsertedPostIfSuccessful()
+    {
+        $posts = [
+            new SimpleXMLElement('<rss><guid>http://site.com/some-post</guid></rss>'),
+        ];
+
+        $mockBlogModel = $this->createMock(BlogModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'blogClient', $mockClient ],
+                [ 'blogModel', $mockBlogModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+        $mockLogger->expects($this->exactly($this->count($posts)))
+            ->method('debug')
+            ->with(
+                $this->equalTo('Inserted new blog post: http://site.com/some-post')
+            );
+
+        $blog = $this->getMockBuilder(Blog::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkPostExists',
+                'fetchPosts',
+                'insertPost',
+            ])
+            ->getMock();
+        $blog->expects($this->exactly(count($posts)))
+            ->method('checkPostExists')
+            ->withConsecutive(
+                [ $mockBlogModel, $posts[0]->guid ]
+            )
+            ->willReturn(false);
+        $blog->method('fetchPosts')
+            ->willReturn($posts);
+        $blog->expects($this->exactly(count($posts)))
+            ->method('insertPost')
+            ->withConsecutive(
+                [ $mockBlogModel, $posts[0], $mockTimezone ]
+            );
+
+        $reflectedBlog = new ReflectionClass(Blog::class);
+
+        $reflectedContainerProperty = $reflectedBlog->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($blog, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBlog->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($blog, $mockLogger);
 
         $blog->run();
     }
@@ -360,6 +569,11 @@ class BlogTest extends TestCase
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
 
+        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockPost = new SimpleXMLElement($mockPost);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
         $mockBlogModel = $this->createMock(BlogModel::class);
         $mockBlogModel->expects($this->once())
             ->method('insertPost')
@@ -369,11 +583,6 @@ class BlogTest extends TestCase
                 $this->anything()
             )
             ->willReturn(1);
-
-        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
-        $mockPost = new SimpleXMLElement($mockPost);
-
-        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -396,6 +605,9 @@ class BlogTest extends TestCase
         $date = '2016-06-30 12:00:00 +000';
         $timezone = 'America/Phoenix'; // always +700, no DST
 
+        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockPost = new SimpleXMLElement($mockPost);
+
         $dateTimeZone = new DateTimeZone($timezone);
         $dateTime = new DateTime($date);
         $dateTime->setTimezone($dateTimeZone);
@@ -411,9 +623,6 @@ class BlogTest extends TestCase
                 $this->anything()
             )
             ->willReturn(1);
-
-        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
-        $mockPost = new SimpleXMLElement($mockPost);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -441,6 +650,8 @@ class BlogTest extends TestCase
         $post = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
         $post = new SimpleXMLElement($post);
 
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
         $mockBlogModel = $this->createMock(BlogModel::class);
         $mockBlogModel->expects($this->once())
             ->method('insertPost')
@@ -450,8 +661,6 @@ class BlogTest extends TestCase
                 $this->equalTo(json_encode($post))
             )
             ->willReturn(1);
-
-        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -469,21 +678,93 @@ class BlogTest extends TestCase
         ]);
     }
 
-    public function testInsertPostReturnsResultFromBlogModel()
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Failed to insert post
+     */
+    public function testInsertPostThrowsExceptionIfModelThrows()
+    {
+        $exception = new Exception('Failed to insert post');
+
+        $date = '2016-06-30 12:00:00';
+        $dateTime = new DateTime($date);
+
+        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockPost = new SimpleXMLElement($mockPost);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogModel = $this->createMock(BlogModel::class);
+        $mockBlogModel->method('insertPost')
+            ->will($this->throwException($exception));
+
+        $blog = $this->getMockBuilder(Blog::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedBlog = new ReflectionClass(Blog::class);
+        $reflectedInsertPostMethod = $reflectedBlog->getMethod('insertPost');
+        $reflectedInsertPostMethod->setAccessible(true);
+
+        $reflectedInsertPostMethod->invokeArgs($blog, [
+            $mockBlogModel,
+            $mockPost,
+            $mockDateTimeZone,
+        ]);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Error while trying to insert new post: http://site.com/some-post
+     */
+    public function testInsertPostThrowsExceptionIfNothingInserted()
+    {
+        $date = '2016-06-30 12:00:00';
+        $dateTime = new DateTime($date);
+
+        $permalink = 'http://site.com/some-post';
+
+        $mockPost = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
+        $mockPost = new SimpleXMLElement($mockPost);
+
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogModel = $this->createMock(BlogModel::class);
+        $mockBlogModel->method('insertPost')
+            ->willReturn(0);
+
+        $blog = $this->getMockBuilder(Blog::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedBlog = new ReflectionClass(Blog::class);
+        $reflectedInsertPostMethod = $reflectedBlog->getMethod('insertPost');
+        $reflectedInsertPostMethod->setAccessible(true);
+
+        $reflectedInsertPostMethod->invokeArgs($blog, [
+            $mockBlogModel,
+            $mockPost,
+            $mockDateTimeZone,
+        ]);
+    }
+
+    public function testInsertPostReturnsTrueIfOneRecordIsAffected()
     {
         $expectedResult = true;
 
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
 
-        $mockBlogModel = $this->createMock(BlogModel::class);
-        $mockBlogModel->method('insertPost')
-            ->willReturn(1);
-
         $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockBlogModel = $this->createMock(BlogModel::class);
+        $mockBlogModel->method('insertPost')
+            ->willReturn(1);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
