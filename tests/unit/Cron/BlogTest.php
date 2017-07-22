@@ -367,7 +367,8 @@ class BlogTest extends TestCase
                 $this->anything(),
                 $this->equalTo($dateTime),
                 $this->anything()
-            );
+            )
+            ->willReturn(1);
 
         $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
@@ -408,7 +409,8 @@ class BlogTest extends TestCase
                     return $param->getTimeZone()->getName() == $dateTime->getTimeZone()->getName();
                 }),
                 $this->anything()
-            );
+            )
+            ->willReturn(1);
 
         $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
@@ -446,7 +448,8 @@ class BlogTest extends TestCase
                 $this->equalTo($permalink),
                 $this->equalTo($dateTime),
                 $this->equalTo(json_encode($post))
-            );
+            )
+            ->willReturn(1);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
 
@@ -475,7 +478,7 @@ class BlogTest extends TestCase
 
         $mockBlogModel = $this->createMock(BlogModel::class);
         $mockBlogModel->method('insertPost')
-            ->willReturn($expectedResult);
+            ->willReturn(1);
 
         $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
