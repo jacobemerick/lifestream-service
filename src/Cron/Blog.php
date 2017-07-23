@@ -101,7 +101,7 @@ class Blog implements CronInterface, LoggerAwareInterface
         $datetime->setTimezone($timezone);
 
         $result = $blogModel->insertPost((string) $post->guid, $datetime, json_encode($post));
-        if ($result !== 1) {
+        if (!$result) {
             throw new Exception("Error while trying to insert new post: {$post->guid}");
         }
 

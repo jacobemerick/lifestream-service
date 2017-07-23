@@ -106,7 +106,7 @@ class BlogComment implements CronInterface, LoggerAwareInterface
         $datetime->setTimezone($timezone);
 
         $result = $blogCommentModel->insertComment((string) $comment->guid, $datetime, json_encode($comment));
-        if ($result !== 1) {
+        if (!$result) {
             throw new Exception("Error while trying to insert new comment: {$comment->guid}");
         }
 

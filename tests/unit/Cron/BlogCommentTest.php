@@ -589,7 +589,7 @@ class BlogCommentTest extends TestCase
                 $this->equalTo($dateTime),
                 $this->anything()
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -629,7 +629,7 @@ class BlogCommentTest extends TestCase
                 }),
                 $this->anything()
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -667,7 +667,7 @@ class BlogCommentTest extends TestCase
                 $this->equalTo($dateTime),
                 $this->equalTo(json_encode($comment))
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -725,7 +725,7 @@ class BlogCommentTest extends TestCase
      * @expectedException Exception
      * @expectedExceptionMessage Error while trying to insert new comment: http://site.com/some-post#comment-123
      */
-    public function testInsertCommentThrowsExceptionIfNothingInserted()
+    public function testInsertCommentThrowsExceptionIfInsertFails()
     {
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
@@ -739,7 +739,7 @@ class BlogCommentTest extends TestCase
 
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
         $mockBlogCommentModel->method('insertComment')
-            ->willReturn(0);
+            ->willReturn(false);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()
@@ -757,7 +757,7 @@ class BlogCommentTest extends TestCase
         ]);
     }
 
-    public function testInsertCommentReturnsTrueIfOneRecordIsAffected()
+    public function testInsertCommentReturnsTrueIfInsertSucceeds()
     {
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
@@ -769,7 +769,7 @@ class BlogCommentTest extends TestCase
 
         $mockBlogCommentModel = $this->createMock(BlogCommentModel::class);
         $mockBlogCommentModel->method('insertComment')
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blogComment = $this->getMockBuilder(BlogComment::class)
             ->disableOriginalConstructor()

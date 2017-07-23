@@ -29,6 +29,9 @@ if ($last_json_error !== JSON_ERROR_NONE) {
 $builder = new ContainerBuilder();
 $di = $builder->newInstance($builder::AUTO_RESOLVE);
 
+// pass config into container
+$di->set('config', $config);
+
 // global time object
 $di->set('timezone', new DateTimeZone('America/Phoenix'));
 $di->set('datetime', new DateTime('now', new DateTimeZone('America/Phoenix')));
@@ -42,6 +45,7 @@ $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
 $di->set('blogCommentModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\BlogComment'));
 $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'));
+$di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
 // set up clients
@@ -55,6 +59,30 @@ $di->set('blogClient', $di->lazyNew(
         ],
     ]]
 ));
+
+$di->set('distanceClient', $di->lazyNew(
+    'GuzzleHttp\Client',
+    [[
+        'base_uri' => $config->distance->baseUri,
+        'headers' => [
+            'User-Agent' => 'lifestream-service/1.0',
+            'Accept' => 'application/json',
+        ],
+    ]]
+));
+
+// set up clients
+$di->set('blogClient', $di->lazyNew(
+    'GuzzleHttp\Client',
+    [[
+        'base_uri' => $config->blog->baseUri,
+        'headers' => [
+            'User-Agent' => 'lifestream-service/1.0',
+            'Accept' => 'application/xml',
+        ],
+    ]]
+));
+
 
 // switch to determine which cron to run
 $opts = getopt('s:');
@@ -87,6 +115,9 @@ switch ($opts['s']) {
         break;
     case 'blogComment':
         $cron = new Cron\BlogComment($di);
+        break;
+    case 'distance':
+        $cron = new Cron\Distance($di);
         break;
     default:
         throw new Exception('Unrecognized cron passed in');

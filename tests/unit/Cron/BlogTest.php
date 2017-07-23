@@ -588,7 +588,7 @@ class BlogTest extends TestCase
                 $this->equalTo($dateTime),
                 $this->anything()
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -628,7 +628,7 @@ class BlogTest extends TestCase
                 }),
                 $this->anything()
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -666,7 +666,7 @@ class BlogTest extends TestCase
                 $this->equalTo($dateTime),
                 $this->equalTo(json_encode($post))
             )
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -724,7 +724,7 @@ class BlogTest extends TestCase
      * @expectedException Exception
      * @expectedExceptionMessage Error while trying to insert new post: http://site.com/some-post
      */
-    public function testInsertPostThrowsExceptionIfNothingInserted()
+    public function testInsertPostThrowsExceptionIfInsertFails()
     {
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
@@ -738,7 +738,7 @@ class BlogTest extends TestCase
 
         $mockBlogModel = $this->createMock(BlogModel::class);
         $mockBlogModel->method('insertPost')
-            ->willReturn(0);
+            ->willReturn(false);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()
@@ -756,7 +756,7 @@ class BlogTest extends TestCase
         ]);
     }
 
-    public function testInsertPostReturnsTrueIfOneRecordIsAffected()
+    public function testInsertPostReturnsTrueIfInsertSucceeds()
     {
         $date = '2016-06-30 12:00:00';
         $dateTime = new DateTime($date);
@@ -768,7 +768,7 @@ class BlogTest extends TestCase
 
         $mockBlogModel = $this->createMock(BlogModel::class);
         $mockBlogModel->method('insertPost')
-            ->willReturn(1);
+            ->willReturn(true);
 
         $blog = $this->getMockBuilder(Blog::class)
             ->disableOriginalConstructor()

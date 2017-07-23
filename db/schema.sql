@@ -42,9 +42,9 @@ SHOW WARNINGS;
 
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `dailymile`;
+DROP TABLE IF EXISTS `distance`;
 
-CREATE TABLE `dailymile` (
+CREATE TABLE `distance` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `entry_id` int(11) unsigned NOT NULL,
   `type` varchar(20) NOT NULL DEFAULT '',
