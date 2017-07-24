@@ -34,33 +34,43 @@ class Distance implements CronInterface, LoggerAwareInterface
 
     public function run()
     {
-        // todo pagination
-        try {
-            $username = $this->container->get('config')->distance->username;
-            $entries = $this->fetchEntries($this->container->get('distanceClient'), $username);
-        } catch (Exception $exception) {
-            $this->logger->error($exception->getMessage());
-            return;
-        }
+        $page = 1;
+        $unprocessedPage = true;
 
-        foreach ($entries as $entry) {
-            $entryExists = $this->checkEntryExists($this->container->get('distanceModel'), $entry->id);
-            if ($entryExists) {
-                continue;
-            }
-
+        while ($unprocessedPage) {
             try {
-                $this->insertEntry(
-                    $this->container->get('distanceModel'),
-                    $entry,
-                    $this->container->get('timezone')
-                );
+                $username = $this->container->get('config')->distance->username;
+                $entries = $this->fetchEntries($this->container->get('distanceClient'), $username, $page);
             } catch (Exception $exception) {
                 $this->logger->error($exception->getMessage());
                 return;
             }
 
-            $this->logger->debug("Inserted new distance entry: {$entry->id}");
+            $this->logger->debug("Processing page {$page} of api results");
+            $unprocessedPage = false;
+
+            foreach ($entries as $entry) {
+                $entryExists = $this->checkEntryExists($this->container->get('distanceModel'), $entry->id);
+                if ($entryExists) {
+                    continue;
+                }
+                $unprocessedPage = true;
+
+                try {
+                    $this->insertEntry(
+                        $this->container->get('distanceModel'),
+                        $entry,
+                        $this->container->get('timezone')
+                    );
+                } catch (Exception $exception) {
+                    $this->logger->error($exception->getMessage());
+                    return;
+                }
+
+                $this->logger->debug("Inserted new distance entry: {$entry->id}");
+            }
+
+            $page++;
         }
     }
 
