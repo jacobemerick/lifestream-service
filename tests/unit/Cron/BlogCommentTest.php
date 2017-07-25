@@ -693,10 +693,7 @@ class BlogCommentTest extends TestCase
     {
         $exception = new Exception('Failed to insert comment');
 
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
-        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockComment = "<item><guid /><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockComment = new SimpleXMLElement($mockComment);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
@@ -727,12 +724,9 @@ class BlogCommentTest extends TestCase
      */
     public function testInsertCommentThrowsExceptionIfInsertFails()
     {
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
         $permalink = 'http://site.com/some-post#comment-123';
 
-        $mockComment = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
+        $mockComment = "<item><guid>{$permalink}</guid><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockComment = new SimpleXMLElement($mockComment);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
@@ -759,10 +753,7 @@ class BlogCommentTest extends TestCase
 
     public function testInsertCommentReturnsTrueIfInsertSucceeds()
     {
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
-        $mockComment = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockComment = "<item><guid /><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockComment = new SimpleXMLElement($mockComment);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);

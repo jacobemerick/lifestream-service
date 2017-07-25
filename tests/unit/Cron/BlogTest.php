@@ -692,10 +692,7 @@ class BlogTest extends TestCase
     {
         $exception = new Exception('Failed to insert post');
 
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
-        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockPost = "<item><guid /><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
@@ -726,12 +723,9 @@ class BlogTest extends TestCase
      */
     public function testInsertPostThrowsExceptionIfInsertFails()
     {
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
         $permalink = 'http://site.com/some-post';
 
-        $mockPost = "<item><guid>{$permalink}</guid><pubDate>{$date}</pubDate></item>";
+        $mockPost = "<item><guid>{$permalink}</guid><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
@@ -758,10 +752,7 @@ class BlogTest extends TestCase
 
     public function testInsertPostReturnsTrueIfInsertSucceeds()
     {
-        $date = '2016-06-30 12:00:00';
-        $dateTime = new DateTime($date);
-
-        $mockPost = "<item><guid /><pubDate>{$date}</pubDate></item>";
+        $mockPost = "<item><guid /><pubDate>2016-06-30 12:00:00</pubDate></item>";
         $mockPost = new SimpleXMLElement($mockPost);
 
         $mockDateTimeZone = $this->createMock(DateTimeZone::class);
