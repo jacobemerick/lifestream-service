@@ -97,32 +97,24 @@ class BlogCommentTest extends TestCase
 
     public function testInsertCommentReturnsTrueIfSuccess()
     {
-        $permalink = 'http://site.com/some-post#comment-123';
-        $datetime = new DateTime();
-        $metadata = '{"key":"value"}';
-
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(1);
 
         $model = new BlogComment($mockPdo);
-        $result = $model->insertComment($permalink, $datetime, $metadata);
+        $result = $model->insertComment('', new DateTime(), '');
 
         $this->assertTrue($result);
     }
 
     public function testInsertCommentReturnsFalseIfFailure()
     {
-        $permalink = 'http://site.com/some-post#comment-123';
-        $datetime = new DateTime();
-        $metadata = '{"key":"value"}';
-
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(0);
 
         $model = new BlogComment($mockPdo);
-        $result = $model->insertComment($permalink, $datetime, $metadata);
+        $result = $model->insertComment('', new DateTime(), '');
 
         $this->assertFalse($result);
     }

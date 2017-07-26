@@ -42,6 +42,38 @@ SHOW WARNINGS;
 
 # ------------------------------------------------------------
 
+DROP TABLE IF EXISTS `book`;
+
+CREATE TABLE `book` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `permalink` varchar(250) NOT NULL DEFAULT '',
+  `book_id` bigint(20) unsigned NOT NULL,
+  `datetime` datetime NOT NULL,
+  `metadata` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+SHOW WARNINGS;
+
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `code`;
+
+CREATE TABLE `code` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `event_id` bigint(20) unsigned NOT NULL,
+  `type` varchar(20) NOT NULL DEFAULT '',
+  `datetime` datetime NOT NULL,
+  `metadata` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+SHOW WARNINGS;
+
+# ------------------------------------------------------------
+
 DROP TABLE IF EXISTS `distance`;
 
 CREATE TABLE `distance` (
@@ -72,38 +104,6 @@ CREATE TABLE `event` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `type_ix` (`type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-SHOW WARNINGS;
-
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `github`;
-
-CREATE TABLE `github` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `event_id` bigint(20) unsigned NOT NULL,
-  `type` varchar(20) NOT NULL DEFAULT '',
-  `datetime` datetime NOT NULL,
-  `metadata` text NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-SHOW WARNINGS;
-
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `goodread`;
-
-CREATE TABLE `goodread` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `permalink` varchar(250) NOT NULL DEFAULT '',
-  `book_id` bigint(20) unsigned NOT NULL,
-  `datetime` datetime NOT NULL,
-  `metadata` text NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 SHOW WARNINGS;

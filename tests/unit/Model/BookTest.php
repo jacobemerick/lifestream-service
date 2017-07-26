@@ -6,35 +6,35 @@ use Aura\Sql\ExtendedPdo;
 use DateTime;
 use PHPUnit\Framework\TestCase;
 
-class BlogTest extends TestCase
+class BookTest extends TestCase
 {
 
-    public function testIsInstanceOfBlog()
+    public function testIsInstanceOfBook()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
-        $model = new Blog($mockPdo);
+        $model = new Book($mockPdo);
 
-        $this->assertInstanceOf(Blog::class, $model);
+        $this->assertInstanceOf(Book::class, $model);
     }
 
     public function testConstructSetsExtendedPdo()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
-        $model = new Blog($mockPdo);
+        $model = new Book($mockPdo);
 
         $this->assertAttributeSame($mockPdo, 'extendedPdo', $model);
     }
 
-    public function testGetPostByPermalinkSendsParams()
+    public function testGetBookByBookIdSendsParams()
     {
-        $permalink = 'http://site.com/some-post';
+        $bookId = '123';
 
         $query = "
-            SELECT `id`, `permalink`, `datetime`, `metadata`
-            FROM `blog`
-            WHERE `permalink` = :permalink";
+            SELECT `id`, `book_id`, `datetime`, `metadata`
+            FROM `book`
+            WHERE `book_id` = :book_id";
         $bindings = [
-            'permalink' => $permalink,
+            'book_id' => $bookId,
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
@@ -45,39 +45,41 @@ class BlogTest extends TestCase
                 $this->equalTo($bindings)
             );
 
-        $model = new Blog($mockPdo);
-        $model->getPostByPermalink($permalink);
+        $model = new Book($mockPdo);
+        $model->getBookByBookId($bookId);
     }
 
-    public function testGetPostByPermalinkReturnsPost()
+    public function testGetBookByBookIdReturnsBook()
     {
-        $post = [
+        $book = [
             'id' => 1,
-            'permalink' => 'http://site.com/some-post',
+            'book_id' => '123',
             'datetime' => '2016-06-30 12:00:00',
             'metdata' => '{"key":"value"}',
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchOne')
-            ->willReturn($post);
+            ->willReturn($book);
 
-        $model = new Blog($mockPdo);
-        $result = $model->getPostByPermalink('');
+        $model = new Book($mockPdo);
+        $result = $model->getBookByBookId('');
 
-        $this->assertSame($post, $result);
+        $this->assertSame($book, $result);
     }
 
-    public function testInsertPostSendsParams()
+    public function testInsertBookSendsParams()
     {
-        $permalink = 'http://site.com/some-post';
+        $bookId = '123';
+        $permalink = 'http://site.com/some-book';
         $datetime = new DateTime();
         $metadata = '{"key":"value"}';
 
         $query = "
-            INSERT INTO `blog` (`permalink`, `datetime`, `metadata`)
-            VALUES (:permalink, :datetime, :metadata)";
+            INSERT INTO `book` (`book_id`, `permalink`, `datetime`, `metadata`)
+            VALUES (:book_id, :permalink, :datetime, :metadata)";
         $bindings = [
+            'book_id' => $bookId,
             'permalink' => $permalink,
             'datetime' => $datetime->format('Y-m-d H:i:s'),
             'metadata' => $metadata,
@@ -91,30 +93,30 @@ class BlogTest extends TestCase
                 $this->equalTo($bindings)
             );
 
-        $model = new Blog($mockPdo);
-        $model->insertPost($permalink, $datetime, $metadata);
+        $model = new Book($mockPdo);
+        $model->insertBook($bookId, $permalink, $datetime, $metadata);
     }
 
-    public function testInsertPostReturnsTrueIfSuccess()
+    public function testInsertBookReturnsTrueIfSuccess()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(1);
 
-        $model = new Blog($mockPdo);
-        $result = $model->insertPost('', new DateTime(), '');
+        $model = new Book($mockPdo);
+        $result = $model->insertBook('', '', new DateTime(), '');
 
         $this->assertTrue($result);
     }
 
-    public function testInsertPostReturnsFalseIfFailure()
+    public function testInsertBookReturnsFalseIfFailure()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(0);
 
-        $model = new Blog($mockPdo);
-        $result = $model->insertPost('', new DateTime(), '');
+        $model = new Book($mockPdo);
+        $result = $model->insertBook('', '', new DateTime(), '');
 
         $this->assertFalse($result);
     }

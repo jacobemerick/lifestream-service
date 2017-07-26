@@ -6,35 +6,35 @@ use Aura\Sql\ExtendedPdo;
 use DateTime;
 use PHPUnit\Framework\TestCase;
 
-class BlogTest extends TestCase
+class CodeTest extends TestCase
 {
 
-    public function testIsInstanceOfBlog()
+    public function testIsInstanceOfCode()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
-        $model = new Blog($mockPdo);
+        $model = new Code($mockPdo);
 
-        $this->assertInstanceOf(Blog::class, $model);
+        $this->assertInstanceOf(Code::class, $model);
     }
 
     public function testConstructSetsExtendedPdo()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
-        $model = new Blog($mockPdo);
+        $model = new Code($mockPdo);
 
         $this->assertAttributeSame($mockPdo, 'extendedPdo', $model);
     }
 
-    public function testGetPostByPermalinkSendsParams()
+    public function testGetEventByEventIdSendsParams()
     {
-        $permalink = 'http://site.com/some-post';
+        $eventId = '123';
 
         $query = "
-            SELECT `id`, `permalink`, `datetime`, `metadata`
-            FROM `blog`
-            WHERE `permalink` = :permalink";
+            SELECT `id`, `type`, `datetime`, `metadata`
+            FROM `code`
+            WHERE `event_id` = :event_id";
         $bindings = [
-            'permalink' => $permalink,
+            'event_id' => $eventId,
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
@@ -45,40 +45,42 @@ class BlogTest extends TestCase
                 $this->equalTo($bindings)
             );
 
-        $model = new Blog($mockPdo);
-        $model->getPostByPermalink($permalink);
+        $model = new Code($mockPdo);
+        $model->getEventByEventId($eventId);
     }
 
-    public function testGetPostByPermalinkReturnsPost()
+    public function testGetEventByEventIdReturnsEvent()
     {
-        $post = [
+        $event = [
             'id' => 1,
-            'permalink' => 'http://site.com/some-post',
+            'type' => 'some type',
             'datetime' => '2016-06-30 12:00:00',
             'metdata' => '{"key":"value"}',
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchOne')
-            ->willReturn($post);
+            ->willReturn($event);
 
-        $model = new Blog($mockPdo);
-        $result = $model->getPostByPermalink('');
+        $model = new Code($mockPdo);
+        $result = $model->getEventByEventId('');
 
-        $this->assertSame($post, $result);
+        $this->assertSame($event, $result);
     }
 
-    public function testInsertPostSendsParams()
+    public function testInsertEventSendsParams()
     {
-        $permalink = 'http://site.com/some-post';
+        $eventId = '123';
+        $type = 'some type';
         $datetime = new DateTime();
         $metadata = '{"key":"value"}';
 
         $query = "
-            INSERT INTO `blog` (`permalink`, `datetime`, `metadata`)
-            VALUES (:permalink, :datetime, :metadata)";
+            INSERT INTO `code` (`event_id`, `type`, `datetime`, `metadata`)
+            VALUES (:event_id, :type, :datetime, :metadata)";
         $bindings = [
-            'permalink' => $permalink,
+            'event_id' => $eventId,
+            'type' => $type,
             'datetime' => $datetime->format('Y-m-d H:i:s'),
             'metadata' => $metadata,
         ];
@@ -91,30 +93,30 @@ class BlogTest extends TestCase
                 $this->equalTo($bindings)
             );
 
-        $model = new Blog($mockPdo);
-        $model->insertPost($permalink, $datetime, $metadata);
+        $model = new Code($mockPdo);
+        $model->insertEvent($eventId, $type, $datetime, $metadata);
     }
 
-    public function testInsertPostReturnsTrueIfSuccess()
+    public function testInsertEventReturnsTrueIfSuccess()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(1);
 
-        $model = new Blog($mockPdo);
-        $result = $model->insertPost('', new DateTime(), '');
+        $model = new Code($mockPdo);
+        $result = $model->insertEvent('', '', new DateTime(), '');
 
         $this->assertTrue($result);
     }
 
-    public function testInsertPostReturnsFalseIfFailure()
+    public function testInsertEventReturnsFalseIfFailure()
     {
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(0);
 
-        $model = new Blog($mockPdo);
-        $result = $model->insertPost('', new DateTime(), '');
+        $model = new Code($mockPdo);
+        $result = $model->insertEvent('', '', new DateTime(), '');
 
         $this->assertFalse($result);
     }

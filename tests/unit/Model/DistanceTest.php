@@ -99,34 +99,24 @@ class DistanceTest extends TestCase
 
     public function testInsertEntryReturnsTrueIfSuccess()
     {
-        $entryId = '123';
-        $type = 'some type';
-        $datetime = new DateTime();
-        $metadata = '{"key":"value"}';
-
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(1);
 
         $model = new Distance($mockPdo);
-        $result = $model->insertEntry($entryId, $type, $datetime, $metadata);
+        $result = $model->insertEntry('', '', new DateTime(), '');
 
         $this->assertTrue($result);
     }
 
     public function testInsertEntryReturnsFalseIfFailure()
     {
-        $entryId = '123';
-        $type = 'some type';
-        $datetime = new DateTime();
-        $metadata = '{"key":"value"}';
-
         $mockPdo = $this->createMock(ExtendedPdo::class);
         $mockPdo->method('fetchAffected')
             ->willReturn(0);
 
         $model = new Distance($mockPdo);
-        $result = $model->insertEntry($entryId, $type, $datetime, $metadata);
+        $result = $model->insertEntry('', '', new DateTime(), '');
 
         $this->assertFalse($result);
     }
