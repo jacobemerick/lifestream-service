@@ -9,8 +9,10 @@ use ReflectionClass;
 
 use PHPUnit\Framework\TestCase;
 
+use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Distance as DistanceModel;
+use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\NullLogger;
 
@@ -55,6 +57,202 @@ class DistanceTest extends TestCase
         $cron = new Distance($mockContainer);
 
         $this->assertAttributeInstanceOf(NullLogger::class, 'logger', $cron);
+    }
+
+    public function testFetchEntriesPullsFromClient()
+    {
+        $username = 'user';
+
+        $mockResponse = $this->createMock(Response::class);
+        $mockResponse->method('getBody')
+            ->willReturn('{"entries":[]}');
+        $mockResponse->method('getStatusCode')
+            ->willReturn(200);
+
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->equalTo('GET'),
+                $this->equalTo("people/{$username}/entries.json")
+            )
+            ->willReturn($mockResponse);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedFetchEntriesMethod = $reflectedDistance->getMethod('fetchEntries');
+        $reflectedFetchEntriesMethod->setAccessible(true);
+
+        $reflectedFetchEntriesMethod->invokeArgs($distance, [
+            $mockClient,
+            $username,
+        ]);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Error while trying to fetch entries: 400
+     */
+    public function testFetchEntriesThrowsExceptionOnNon200Status()
+    {
+        $mockResponse = $this->createMock(Response::class);
+        $mockResponse->expects($this->never())
+            ->method('getBody');
+        $mockResponse->method('getStatusCode')
+            ->willReturn(400);
+
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->equalTo('GET'),
+                $this->equalTo('people//entries.json')
+            )
+            ->willReturn($mockResponse);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedFetchEntriesMethod = $reflectedDistance->getMethod('fetchEntries');
+        $reflectedFetchEntriesMethod->setAccessible(true);
+
+        $reflectedFetchEntriesMethod->invokeArgs($distance, [
+            $mockClient,
+            '',
+        ]);
+    }
+
+    public function testFetchEntriesReturnsEntries()
+    {
+        $entries = [
+            (object) [
+                'id' => 1,
+            ],
+            (object) [
+                'id' => 2,
+            ],
+        ];
+        $jsonEntries = json_encode($entries);
+
+        $json = "{\"entries\":{$jsonEntries}}";
+
+        $mockResponse = $this->createMock(Response::class);
+        $mockResponse->expects($this->once())
+            ->method('getBody')
+            ->willReturn($json);
+        $mockResponse->method('getStatusCode')
+            ->willReturn(200);
+
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->expects($this->once())
+            ->method('request')
+            ->with(
+                $this->equalTo('GET'),
+                $this->equalTo('people//entries.json')
+            )
+            ->willReturn($mockResponse);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedFetchEntriesMethod = $reflectedDistance->getMethod('fetchEntries');
+        $reflectedFetchEntriesMethod->setAccessible(true);
+
+        $result = $reflectedFetchEntriesMethod->invokeArgs($distance, [
+            $mockClient,
+            '',
+        ]);
+
+        $this->assertEquals($entries, $result);
+    }
+
+    public function testCheckEntryExistsPullsFromDistanceModel()
+    {
+        $entryId = '123';
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockDistanceModel->expects($this->once())
+            ->method('getEntryByEntryId')
+            ->with(
+                $this->equalTo($entryId)
+            );
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedCheckEntryExistsMethod = $reflectedDistance->getMethod('checkEntryExists');
+        $reflectedCheckEntryExistsMethod->setAccessible(true);
+
+        $reflectedCheckEntryExistsMethod->invokeArgs($distance, [
+            $mockDistanceModel,
+            $entryId,
+        ]);
+    }
+
+    public function testCheckEntryExistsReturnsTrueIfRecordExists()
+    {
+        $entry = [
+            'id' => '123',
+            'entry_id' => '123',
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockDistanceModel->method('getEntryByEntryId')
+            ->willReturn($entry);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedCheckEntryExistsMethod = $reflectedDistance->getMethod('checkEntryExists');
+        $reflectedCheckEntryExistsMethod->setAccessible(true);
+
+        $result = $reflectedCheckEntryExistsMethod->invokeArgs($distance, [
+            $mockDistanceModel,
+            '',
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    public function testCheckEntryExistsReturnsFalsesIfRecordNotExists()
+    {
+        $entry = false;
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockDistanceModel->method('getEntryByEntryId')
+            ->willReturn($entry);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+        $reflectedCheckEntryExistsMethod = $reflectedDistance->getMethod('checkEntryExists');
+        $reflectedCheckEntryExistsMethod->setAccessible(true);
+
+        $result = $reflectedCheckEntryExistsMethod->invokeArgs($distance, [
+            $mockDistanceModel,
+            '',
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testInsertEntryCastsDateToDateTime()
