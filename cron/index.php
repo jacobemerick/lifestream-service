@@ -60,6 +60,17 @@ $di->set('blogClient', $di->lazyNew(
     ]]
 ));
 
+$di->set('bookClient', $di->lazyNew(
+    'GuzzleHttp\Client',
+    [[
+        'base_uri' => $config->book->baseUri,
+        'headers' => [
+            'User-Agent' => 'lifestream-service/1.0',
+            'Accept' => 'application/xml',
+        ],
+    ]]
+));
+
 $di->set('distanceClient', $di->lazyNew(
     'GuzzleHttp\Client',
     [[
@@ -115,6 +126,9 @@ switch ($opts['s']) {
         break;
     case 'blogComment':
         $cron = new Cron\BlogComment($di);
+        break;
+    case 'book':
+        $cron = new Cron\Book($di);
         break;
     case 'distance':
         $cron = new Cron\Distance($di);
