@@ -14,6 +14,7 @@ use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Distance as DistanceModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerInterface as Logger;
 use Psr\Log\NullLogger;
 
 class DistanceTest extends TestCase
@@ -22,41 +23,704 @@ class DistanceTest extends TestCase
     public function testIsInstanceOfDistance()
     {
         $mockContainer = $this->createMock(Container::class);
-        $cron = new Distance($mockContainer);
+        $distance = new Distance($mockContainer);
 
-        $this->assertInstanceOf(Distance::class, $cron);
+        $this->assertInstanceOf(Distance::class, $distance);
     }
 
     public function testIsInstanceOfCronInterface()
     {
         $mockContainer = $this->createMock(Container::class);
-        $cron = new Distance($mockContainer);
+        $distance = new Distance($mockContainer);
 
-        $this->assertInstanceOf(CronInterface::class, $cron);
+        $this->assertInstanceOf(CronInterface::class, $distance);
     }
 
     public function testIsInstanceOfLoggerAwareInterface()
     {
         $mockContainer = $this->createMock(Container::class);
-        $cron = new Distance($mockContainer);
+        $distance = new Distance($mockContainer);
 
-        $this->assertInstanceOf(LoggerAwareInterface::class, $cron);
+        $this->assertInstanceOf(LoggerAwareInterface::class, $distance);
     }
 
     public function testConstructSetsContainer()
     {
         $mockContainer = $this->createMock(Container::class);
-        $cron = new Distance($mockContainer);
+        $distance = new Distance($mockContainer);
 
-        $this->assertAttributeSame($mockContainer, 'container', $cron);
+        $this->assertAttributeSame($mockContainer, 'container', $distance);
     }
 
     public function testConstructSetsNullLogger()
     {
         $mockContainer = $this->createMock(Container::class);
-        $cron = new Distance($mockContainer);
+        $distance = new Distance($mockContainer);
 
-        $this->assertAttributeInstanceOf(NullLogger::class, 'logger', $cron);
+        $this->assertAttributeInstanceOf(NullLogger::class, 'logger', $distance);
+    }
+
+    public function testRunFetchesEntries()
+    {
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockClient = $this->createMock(Client::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->never())
+            ->method('checkEntryExists');
+        $distance->expects($this->once())
+            ->method('fetchEntries')
+            ->with(
+                $this->equalTo($mockClient),
+                $this->equalTo($mockConfig->distance->username),
+                $this->anything()
+            )
+            ->willReturn([]);
+        $distance->expects($this->never())
+            ->method('insertEntry');
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+ 
+    public function testRunLogsThrownExceptionFromFetchEntries()
+    {
+        $mockExceptionMessage = 'Failed to fetch entries';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockClient = $this->createMock(Client::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo($mockExceptionMessage));
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->never())
+            ->method('checkEntryExists');
+        $distance->method('fetchEntries')
+            ->will($this->throwException($mockException));
+        $distance->expects($this->never())
+            ->method('insertEntry');
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunChecksIfEachEntryExists()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+            (object) [
+                'id' => '456',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(count($entries)))
+            ->method('checkEntryExists')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0]->id ],
+                [ $mockDistanceModel, $entries[1]->id ]
+            )
+            ->willReturn(true);
+        $distance->method('fetchEntries')
+            ->with($mockClient)
+            ->willReturn($entries);
+        $distance->expects($this->never())
+            ->method('insertEntry');
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunPassesOntoInsertIfEntryNotExists()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+            (object) [
+                'id' => '456',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(count($entries)))
+            ->method('checkEntryExists')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0]->id ],
+                [ $mockDistanceModel, $entries[1]->id ]
+            )
+            ->will($this->onConsecutiveCalls(false, true));
+        $distance->method('fetchEntries')
+            ->willReturn($entries);
+        $distance->expects($this->once())
+            ->method('insertEntry')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0], $mockTimezone ]
+            );
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunLogsThrownExceptionFromInsertEntry()
+    {
+        $mockExceptionMessage = 'Failed to insert entry';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(count($entries)))
+            ->method('checkEntryExists')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0]->id ]
+            )
+            ->willReturn(false);
+        $distance->method('fetchEntries')
+            ->willReturn($entries);
+        $distance->method('insertEntry')
+            ->will($this->throwException($mockException));
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunLogsInsertedEntryIfSuccessful()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+            (object) [
+                'id' => '456',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(2))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->anything() ],
+                [ $this->equalTo('Inserted new distance entry: 123') ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(count($entries)))
+            ->method('checkEntryExists')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0]->id ],
+                [ $mockDistanceModel, $entries[1]->id ]
+            )
+            ->will($this->onConsecutiveCalls(false, true));
+        $distance->method('fetchEntries')
+            ->willReturn($entries);
+        $distance->expects($this->once())
+            ->method('insertEntry')
+            ->withConsecutive(
+                [ $mockDistanceModel, $entries[0], $mockTimezone ]
+            );
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunMakesSingleRequestIfNoEntries()
+    {
+        $entries = [];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Processing page 1 of api results'));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->never())
+            ->method('checkEntryExists');
+        $distance->expects($this->once())
+            ->method('fetchEntries')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($entries);
+        $distance->expects($this->never())
+            ->method('insertEntry');
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunMakesSingleRequestIfNoNewEntries()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Processing page 1 of api results'));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->once())
+            ->method('checkEntryExists')
+            ->willReturn(true);
+        $distance->expects($this->once())
+            ->method('fetchEntries')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($entries);
+        $distance->expects($this->never())
+            ->method('insertEntry');
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunMakesSingleRequestIfSomeDuplicateEntries()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+            (object) [
+                'id' => '456',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(2))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->equalTo('Processing page 1 of api results') ],
+                [ $this->anything() ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(2))
+            ->method('checkEntryExists')
+            ->will($this->onConsecutiveCalls(false, true));
+        $distance->expects($this->once())
+            ->method('fetchEntries')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($entries);
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
+    }
+
+    public function testRunMakesMultipleRequestsIfInitialRequestAllNew()
+    {
+        $entries = [
+            (object) [
+                'id' => '123',
+            ],
+        ];
+
+        $mockDistanceModel = $this->createMock(DistanceModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'distance' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'distanceClient', $mockClient ],
+                [ 'distanceModel', $mockDistanceModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(3))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->equalTo('Processing page 1 of api results') ],
+                [ $this->anything() ],
+                [ $this->equalTo('Processing page 2 of api results') ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $distance = $this->getMockBuilder(Distance::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEntryExists',
+                'fetchEntries',
+                'insertEntry',
+            ])
+            ->getMock();
+        $distance->expects($this->exactly(2))
+            ->method('checkEntryExists')
+            ->will($this->onConsecutiveCalls(false, true));
+        $distance->expects($this->exactly(2))
+            ->method('fetchEntries')
+            ->withConsecutive(
+                [ $this->anything(), $this->anything(), $this->equalTo(1) ],
+                [ $this->anything(), $this->anything(), $this->equalTo(2) ]
+            )
+            ->willReturn($entries);
+
+        $reflectedDistance = new ReflectionClass(Distance::class);
+
+        $reflectedContainerProperty = $reflectedDistance->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($distance, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedDistance->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($distance, $mockLogger);
+
+        $distance->run();
     }
 
     public function testFetchEntriesPullsFromClient()

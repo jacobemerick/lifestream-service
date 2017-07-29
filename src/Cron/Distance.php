@@ -56,7 +56,7 @@ class Distance implements CronInterface, LoggerAwareInterface
                     continue;
                 }
 
-                $fetchEntries = true;
+                $makeNewRequest = true;
                 try {
                     $this->insertEntry(
                         $this->container->get('distanceModel'),
