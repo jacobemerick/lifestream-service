@@ -171,7 +171,62 @@ class BookTest extends TestCase
 
     public function testRunSkipsBookIfBookIsUnread()
     {
-        $this->markTestIncomplete();
+        $books = [
+            new SimpleXMLElement('<rss><user_read_at></user_read_at><book_id>123</book_id></rss>'),
+        ];
+
+        $mockBookModel = $this->createMock(BookModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'book' => (object) [
+                'shelf' => 'user_shelf',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'bookClient', $mockClient ],
+                [ 'bookModel', $mockBookModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(1))
+            ->method('debug')
+            ->with($this->equalTo('Processing page 1 of api results'));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $book = $this->getMockBuilder(Book::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkBookExists',
+                'fetchBooks',
+                'insertBook',
+            ])
+            ->getMock();
+        $book->expects($this->never())
+            ->method('checkBookExists');
+        $book->method('fetchBooks')
+            ->willReturn($books);
+        $book->expects($this->never())
+            ->method('insertBook');
+
+        $reflectedBook = new ReflectionClass(Book::class);
+
+        $reflectedContainerProperty = $reflectedBook->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($book, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBook->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($book, $mockLogger);
+
+        $book->run();
     }
 
     public function testRunChecksIfEachBookExists()
@@ -438,24 +493,272 @@ class BookTest extends TestCase
         $book->run();
     }
 
-    public function testRunMakesSingleRequestIfNoEntries()
+    public function testRunMakesSingleRequestIfNoBooks()
     {
-        $this->markTestIncomplete();
+        $books = [];
+
+        $mockBookModel = $this->createMock(BookModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'book' => (object) [
+                'shelf' => 'user_shelf',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'bookClient', $mockClient ],
+                [ 'bookModel', $mockBookModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Processing page 1 of api results'));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $book = $this->getMockBuilder(Book::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkBookExists',
+                'fetchBooks',
+                'insertBook',
+            ])
+            ->getMock();
+        $book->expects($this->never())
+            ->method('checkBookExists');
+        $book->expects($this->once())
+            ->method('fetchBooks')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($books);
+        $book->expects($this->never())
+            ->method('insertBook');
+
+        $reflectedBook = new ReflectionClass(Book::class);
+
+        $reflectedContainerProperty = $reflectedBook->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($book, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBook->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($book, $mockLogger);
+
+        $book->run();
     }
 
-    public function testRunMakesSingleRequestIfNoNewEntries()
+    public function testRunMakesSingleRequestIfNoNewBooks()
     {
-        $this->markTestIncomplete();
+        $books = [
+            new SimpleXMLElement('<rss><user_read_at>now</user_read_at><book_id>123</book_id></rss>'),
+        ];
+
+        $mockBookModel = $this->createMock(BookModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'book' => (object) [
+                'shelf' => 'user_shelf',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'bookClient', $mockClient ],
+                [ 'bookModel', $mockBookModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Processing page 1 of api results'));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $book = $this->getMockBuilder(Book::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkBookExists',
+                'fetchBooks',
+                'insertBook',
+            ])
+            ->getMock();
+        $book->expects($this->once())
+            ->method('checkBookExists')
+            ->willReturn(true);
+        $book->expects($this->once())
+            ->method('fetchBooks')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($books);
+        $book->expects($this->never())
+            ->method('insertBook');
+
+        $reflectedBook = new ReflectionClass(Book::class);
+
+        $reflectedContainerProperty = $reflectedBook->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($book, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBook->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($book, $mockLogger);
+
+        $book->run();
     }
 
-    public function testRunMakesSingleRequestIfSomeDuplicateEntries()
+    public function testRunMakesSingleRequestIfSomeDuplicateBooks()
     {
-        $this->markTestIncomplete();
+        $books = [
+            new SimpleXMLElement('<rss><user_read_at>now</user_read_at><book_id>123</book_id></rss>'),
+            new SimpleXMLElement('<rss><user_read_at>now</user_read_at><book_id>456</book_id></rss>'),
+        ];
+
+        $mockBookModel = $this->createMock(BookModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'book' => (object) [
+                'shelf' => 'user_shelf',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'bookClient', $mockClient ],
+                [ 'bookModel', $mockBookModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(2))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->equalTo('Processing page 1 of api results') ],
+                [ $this->anything() ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $book = $this->getMockBuilder(Book::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkBookExists',
+                'fetchBooks',
+                'insertBook',
+            ])
+            ->getMock();
+        $book->expects($this->exactly(2))
+            ->method('checkBookExists')
+            ->will($this->onConsecutiveCalls(false, true));
+        $book->expects($this->once())
+            ->method('fetchBooks')
+            ->with(
+                $this->anything(),
+                $this->anything(),
+                $this->equalTo(1)
+            )
+            ->willReturn($books);
+
+        $reflectedBook = new ReflectionClass(Book::class);
+
+        $reflectedContainerProperty = $reflectedBook->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($book, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBook->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($book, $mockLogger);
+
+        $book->run();
     }
 
     public function testRunMakesMultipleRequestsIfInitialRequestAllNew()
     {
-        $this->markTestIncomplete();
+        $books = [
+            new SimpleXMLElement('<rss><user_read_at>now</user_read_at><book_id>123</book_id></rss>'),
+        ];
+
+        $mockBookModel = $this->createMock(BookModel::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockConfig = (object) [
+            'book' => (object) [
+                'shelf' => 'user_shelf',
+            ],
+        ];
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'bookClient', $mockClient ],
+                [ 'bookModel', $mockBookModel ],
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(3))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->equalTo('Processing page 1 of api results') ],
+                [ $this->anything() ],
+                [ $this->equalTo('Processing page 2 of api results') ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $book = $this->getMockBuilder(Book::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkBookExists',
+                'fetchBooks',
+                'insertBook',
+            ])
+            ->getMock();
+        $book->expects($this->exactly(2))
+            ->method('checkBookExists')
+            ->will($this->onConsecutiveCalls(false, true));
+        $book->expects($this->exactly(2))
+            ->method('fetchBooks')
+            ->withConsecutive(
+                [ $this->anything(), $this->anything(), $this->equalTo(1) ],
+                [ $this->anything(), $this->anything(), $this->equalTo(2) ]
+            )
+            ->willReturn($books);
+
+        $reflectedBook = new ReflectionClass(Book::class);
+
+        $reflectedContainerProperty = $reflectedBook->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($book, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedBook->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($book, $mockLogger);
+
+        $book->run();
     }
 
     public function testFetchBooksPullsFromClient()
