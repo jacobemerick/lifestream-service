@@ -10,7 +10,9 @@
         "aura/di": "^3.2",
         "aura/sql": "^2.5",
         "guzzlehttp/guzzle": "^6.3",
-        "monolog/monolog": "^1.23"
+        "monolog/monolog": "^1.23",
+        "knplabs/github-api": "^2.5",
+        "php-http/guzzle6-adapter": "^1.1"
     },
     "require-dev": {
         "codeclimate/php-test-reporter": "^0.4.4",
