@@ -45,6 +45,7 @@ $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
 $di->set('blogCommentModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\BlogComment'));
 $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'));
+$di->set('bookModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Book'));
 $di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
