@@ -726,6 +726,7 @@ class DistanceTest extends TestCase
     public function testFetchEntriesPullsFromClient()
     {
         $username = 'user';
+        $page = 2;
 
         $mockResponse = $this->createMock(Response::class);
         $mockResponse->method('getBody')
@@ -738,7 +739,10 @@ class DistanceTest extends TestCase
             ->method('request')
             ->with(
                 $this->equalTo('GET'),
-                $this->equalTo("people/{$username}/entries.json")
+                $this->equalTo("people/{$username}/entries.json"),
+                $this->equalTo([
+                    'query' => [ 'page' => $page ],
+                ])
             )
             ->willReturn($mockResponse);
 
@@ -754,6 +758,7 @@ class DistanceTest extends TestCase
         $reflectedFetchEntriesMethod->invokeArgs($distance, [
             $mockClient,
             $username,
+            $page,
         ]);
     }
 
@@ -770,12 +775,7 @@ class DistanceTest extends TestCase
             ->willReturn(400);
 
         $mockClient = $this->createMock(Client::class);
-        $mockClient->expects($this->once())
-            ->method('request')
-            ->with(
-                $this->equalTo('GET'),
-                $this->equalTo('people//entries.json')
-            )
+        $mockClient->method('request')
             ->willReturn($mockResponse);
 
         $distance = $this->getMockBuilder(Distance::class)
@@ -790,6 +790,7 @@ class DistanceTest extends TestCase
         $reflectedFetchEntriesMethod->invokeArgs($distance, [
             $mockClient,
             '',
+            0,
         ]);
     }
 
@@ -815,12 +816,7 @@ class DistanceTest extends TestCase
             ->willReturn(200);
 
         $mockClient = $this->createMock(Client::class);
-        $mockClient->expects($this->once())
-            ->method('request')
-            ->with(
-                $this->equalTo('GET'),
-                $this->equalTo('people//entries.json')
-            )
+        $mockClient->method('request')
             ->willReturn($mockResponse);
 
         $distance = $this->getMockBuilder(Distance::class)
@@ -835,6 +831,7 @@ class DistanceTest extends TestCase
         $result = $reflectedFetchEntriesMethod->invokeArgs($distance, [
             $mockClient,
             '',
+            0,
         ]);
 
         $this->assertEquals($entries, $result);

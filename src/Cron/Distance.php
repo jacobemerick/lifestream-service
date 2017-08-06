@@ -78,11 +78,18 @@ class Distance implements CronInterface, LoggerAwareInterface
     /**
      * @param Client $client
      * @param string $username
+     * @param integer $page
      * @return array
      */
-    protected function fetchEntries(Client $client, $username)
+    protected function fetchEntries(Client $client, $username, $page)
     {
-        $response = $client->request('GET', "people/{$username}/entries.json");
+        $response = $client->request(
+            'GET',
+            "people/{$username}/entries.json",
+            [
+                'query' => [ 'page' => $page ],
+            ]
+        );
         if ($response->getStatusCode() !== 200) {
             throw new Exception("Error while trying to fetch entries: {$response->getStatusCode()}");
         }

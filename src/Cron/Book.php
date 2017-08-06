@@ -55,7 +55,10 @@ class Book implements CronInterface, LoggerAwareInterface
                     continue;
                 }
 
-                $bookExists = $this->checkBookExists($this->container->get('bookModel'), $book->book_id);
+                $bookExists = $this->checkBookExists(
+                    $this->container->get('bookModel'),
+                    (string) $book->book_id
+                );
                 if ($bookExists) {
                     $makeNewRequest = false;
                     continue;
@@ -83,17 +86,24 @@ class Book implements CronInterface, LoggerAwareInterface
     /**
      * @param Client $client
      * @param string $shelf
+     * @param integer $page
      * @return array
      */
-    protected function fetchBooks(Client $client, $shelf)
+    protected function fetchBooks(Client $client, $shelf, $page)
     {
-        $response = $client->request('GET', "/review/list_rss/{$shelf}");
+        $response = $client->request(
+            'GET',
+            "/review/list_rss/{$shelf}",
+            [
+                'query' => [ 'page' => $page ],
+            ]
+        );
         if ($response->getStatusCode() !== 200) {
             throw new Exception("Error while trying to fetch books: {$response->getStatusCode()}");
         }
 
         $rssString = (string) $response->getBody();
-        $rss = new SimpleXMLElement($rssString);
+        $rss = new SimpleXMLElement($rssString, LIBXML_NOCDATA);
         return $rss->channel->item;
     }
 
@@ -120,8 +130,8 @@ class Book implements CronInterface, LoggerAwareInterface
         $datetime->setTimezone($timezone);
 
         $result = $bookModel->insertBook(
-            $book->book_id,
-            $book->guid,
+            (string) $book->book_id,
+            (string) $book->guid,
             $datetime,
             json_encode($book)
         );

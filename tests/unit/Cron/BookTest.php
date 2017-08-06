@@ -764,6 +764,7 @@ class BookTest extends TestCase
     public function testFetchBooksPullsFromClient()
     {
         $shelf = 'user_shelf';
+        $page = 2;
 
         $mockResponse = $this->createMock(Response::class);
         $mockResponse->method('getBody')
@@ -776,7 +777,10 @@ class BookTest extends TestCase
             ->method('request')
             ->with(
                 $this->equalTo('GET'),
-                $this->equalTo("/review/list_rss/{$shelf}")
+                $this->equalTo("/review/list_rss/{$shelf}"),
+                $this->equalTo([
+                    'query' => [ 'page' => $page ],
+                ])
             )
             ->willReturn($mockResponse);
 
@@ -792,6 +796,7 @@ class BookTest extends TestCase
         $reflectedFetchBooksMethod->invokeArgs($book, [
             $mockClient,
             $shelf,
+            $page,
         ]);
     }
 
@@ -808,12 +813,7 @@ class BookTest extends TestCase
             ->willReturn(400);
 
         $mockClient = $this->createMock(Client::class);
-        $mockClient->expects($this->once())
-            ->method('request')
-            ->with(
-                $this->equalTo('GET'),
-                $this->equalTo('/review/list_rss/')
-            )
+        $mockClient->method('request')
             ->willReturn($mockResponse);
 
         $book = $this->getMockBuilder(Book::class)
@@ -828,6 +828,7 @@ class BookTest extends TestCase
         $reflectedFetchBooksMethod->invokeArgs($book, [
             $mockClient,
             '',
+            0,
         ]);
     }
 
@@ -846,12 +847,7 @@ class BookTest extends TestCase
             ->willReturn(200);
 
         $mockClient = $this->createMock(Client::class);
-        $mockClient->expects($this->once())
-            ->method('request')
-            ->with(
-                $this->equalTo('GET'),
-                $this->equalTo('/review/list_rss/')
-            )
+        $mockClient->method('request')
             ->willReturn($mockResponse);
 
         $book = $this->getMockBuilder(Book::class)
@@ -866,6 +862,7 @@ class BookTest extends TestCase
         $result = $reflectedFetchBooksMethod->invokeArgs($book, [
             $mockClient,
             '',
+            0,
         ]);
 
         $this->assertEquals($xmlItems, $result);
