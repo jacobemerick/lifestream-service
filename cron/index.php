@@ -46,6 +46,7 @@ $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 $di->set('blogCommentModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\BlogComment'));
 $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'));
 $di->set('bookModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Book'));
+$di->set('codeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Code'));
 $di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
@@ -72,6 +73,8 @@ $di->set('bookClient', $di->lazyNew(
     ]]
 ));
 
+$di->set('codeClient', $di->lazyNew('Github\Client'));
+
 $di->set('distanceClient', $di->lazyNew(
     'GuzzleHttp\Client',
     [[
@@ -82,19 +85,6 @@ $di->set('distanceClient', $di->lazyNew(
         ],
     ]]
 ));
-
-// set up clients
-$di->set('blogClient', $di->lazyNew(
-    'GuzzleHttp\Client',
-    [[
-        'base_uri' => $config->blog->baseUri,
-        'headers' => [
-            'User-Agent' => 'lifestream-service/1.0',
-            'Accept' => 'application/xml',
-        ],
-    ]]
-));
-
 
 // switch to determine which cron to run
 $opts = getopt('s:');
@@ -130,6 +120,9 @@ switch ($opts['s']) {
         break;
     case 'book':
         $cron = new Cron\Book($di);
+        break;
+    case 'code':
+        $cron = new Cron\Code($di);
         break;
     case 'distance':
         $cron = new Cron\Distance($di);
