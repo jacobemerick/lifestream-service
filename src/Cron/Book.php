@@ -35,9 +35,8 @@ class Book implements CronInterface, LoggerAwareInterface
     public function run()
     {
         $page = 1;
-        $makeNewRequest = true;
 
-        while ($makeNewRequest) {
+        while (true) {
             try {
                 $shelf = $this->container->get('config')->book->shelf;
                 $books = $this->fetchBooks($this->container->get('bookClient'), $shelf, $page);
@@ -46,7 +45,10 @@ class Book implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $makeNewRequest = false;
+            if (empty($books)) {
+                break;
+            }
+
             $this->logger->debug("Processing page {$page} of api results");
 
             foreach ($books as $book) {
@@ -60,11 +62,9 @@ class Book implements CronInterface, LoggerAwareInterface
                     (string) $book->book_id
                 );
                 if ($bookExists) {
-                    $makeNewRequest = false;
                     continue;
                 }
 
-                $makeNewRequest = true;
                 try {
                     $this->insertBook(
                         $this->container->get('bookModel'),
