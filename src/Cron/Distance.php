@@ -35,9 +35,8 @@ class Distance implements CronInterface, LoggerAwareInterface
     public function run()
     {
         $page = 1;
-        $makeNewRequest = true;
 
-        while ($makeNewRequest) {
+        while (true) {
             try {
                 $username = $this->container->get('config')->distance->username;
                 $entries = $this->fetchEntries($this->container->get('distanceClient'), $username, $page);
@@ -46,17 +45,18 @@ class Distance implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $makeNewRequest = false;
+            if (empty($entries)) {
+                break;
+            }
+
             $this->logger->debug("Processing page {$page} of api results");
 
             foreach ($entries as $entry) {
                 $entryExists = $this->checkEntryExists($this->container->get('distanceModel'), $entry->id);
                 if ($entryExists) {
-                    $makeNewRequest = false;
                     continue;
                 }
 
-                $makeNewRequest = true;
                 try {
                     $this->insertEntry(
                         $this->container->get('distanceModel'),
