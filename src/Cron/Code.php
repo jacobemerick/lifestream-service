@@ -44,42 +44,36 @@ class Code implements CronInterface, LoggerAwareInterface
 
         // @todo how does this api fail? what does it look like?
         $events = $pager->fetch($userApi, 'publicEvents', [ 'jacobemerick' ]);
-        $this->processEvents($events, $page);
+        $this->processEvents($events);
+
+        $this->logger->debug("Processing page {$page} of api results");
 
         while ($pager->hasNext()) {
             $page++;
+            $this->logger->debug("Processing page {$page} of api results");
+
             $events = $pager->fetchNext();
-            $this->processEvents($events, $page);
+            try {
+                $this->processEvents($events);
+            } catch (Exception $exception) {
+                $this->logger->error($exception->getMessage());
+                return;
+            }
         }
     }
 
     /**
      * @param array $events
-     * @param integer $page
      */
-    protected function processEvents(array $events, $page)
+    protected function processEvents(array $events)
     {
-        // @todo should this log be here or in ::run
-        $this->logger->debug("Processing page {$page} of api results");
-
         foreach ($events as $event) {
             $eventExists = $this->checkEventExists($this->container->get('codeModel'), $event['id']);
             if ($eventExists) {
                 continue;
             }
 
-            // @todo allow exception to bubble up
-            try {
-                $this->insertEvent(
-                    $this->container->get('codeModel'),
-                    $event,
-                    $this->container->get('timezone')
-                );
-            } catch (Exception $exception) {
-                $this->logger->error($exception->getMessage());
-                return;
-            }
-
+            $this->insertEvent($this->container->get('codeModel'), $event, $this->container->get('timezone'));
             $this->logger->debug("Inserted new event: {$event['id']}");
         }
     }
