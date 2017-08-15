@@ -36,7 +36,6 @@ class Code implements CronInterface, LoggerAwareInterface
     public function run()
     {
         $page = 1;
-        $makeNewRequest = true;
 
         $client = $this->container->get('codeClient');
         $userApi = $client->api('user');
