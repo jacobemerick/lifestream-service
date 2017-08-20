@@ -9,7 +9,9 @@ use ReflectionClass;
 
 use PHPUnit\Framework\TestCase;
 
-use GuzzleHttp\ClientInterface as Client;
+use Github\Client as Client;
+use Github\ResultPager as Pager;
+use Github\Api\User as UserApi;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Code as CodeModel;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -62,27 +64,555 @@ class CodeTest extends TestCase
 
     public function testRunFetchesEvents()
     {
-        $this->markTestIncomplete();
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->expects($this->once())
+            ->method('api')
+            ->with(
+                $this->equalTo('user')
+            )
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->expects($this->once())
+            ->method('fetch')
+            ->with(
+                $this->equalTo($mockUserApi),
+                $this->equalTo('publicEvents'),
+                $this->equalTo([ $mockConfig->code->username ])
+            )
+            ->willReturn([]);
+        $mockPager->method('hasNext')
+            ->willReturn(false);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with('Processing page 1 of api results');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
     }
  
+    public function testRunBailsIfRequestFails()
+    {
+        $mockExceptionMessage = 'Failed to fetch events';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->will($this->throwException($mockException));
+        $mockPager->expects($this->never())
+            ->method('hasNext');
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->expects($this->never())
+            ->method('processEvents');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
+    }
+
     public function testRunProcessesEvents()
     {
-        $this->markTestIncomplete();
+        $events = [
+            'some event',
+        ];
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn($events);
+        $mockPager->method('hasNext')
+            ->willReturn(false);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->expects($this->once())
+            ->method('processEvents')
+            ->with(
+                $this->equalTo($events)
+            );
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
+    }
+
+
+    public function testRunBailsIfProcessEventsFails()
+    {
+        $mockExceptionMessage = 'Failed to process events';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn([]);
+        $mockPager->expects($this->never())
+            ->method('hasNext');
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with('Processing page 1 of api results');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->method('processEvents')
+            ->will($this->throwException($mockException));
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
     }
 
     public function testRunAvoidsSecondHitIfNoPagination()
     {
-        $this->markTestIncomplete();
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->expects($this->once())
+            ->method('fetch')
+            ->willReturn([]);
+        $mockPager->method('hasNext')
+            ->willReturn(false);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->expects($this->once())
+            ->method('processEvents');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
     }
 
     public function testRunFetchesAgainIfPagination()
     {
-        $this->markTestIncomplete();
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn([]);
+        $mockPager->expects($this->once())
+            ->method('fetchNext')
+            ->willReturn([]);
+        $mockPager->method('hasNext')
+            ->will($this->onConsecutiveCalls(true, false));
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(2))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->anything() ],
+                [ $this->equalTo('Processing page 2 of api results') ]
+            );
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
     }
 
-    public function testRunProcessesSecondPageResults()
+    public function testRunBailsIfSecondRequestFails()
     {
-        $this->markTestIncomplete();
+        $mockExceptionMessage = 'Failed to fetch events';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn([]);
+        $mockPager->method('fetchNext')
+            ->will($this->throwException($mockException));
+        $mockPager->expects($this->once())
+            ->method('hasNext')
+            ->willReturn(true);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->expects($this->once())
+            ->method('processEvents');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
+    }
+
+    public function testRunProcessesPaginatedEvents()
+    {
+        $events = [
+            'some event',
+        ];
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn([]);
+        $mockPager->method('fetchNext')
+            ->willReturn($events);
+        $mockPager->method('hasNext')
+            ->will($this->onConsecutiveCalls(true, false));
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->expects($this->exactly(2))
+            ->method('processEvents')
+            ->withConsecutive(
+                [ $this->anything() ],
+                [ $this->equalTo($events) ]
+            );
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
+    }
+
+
+    public function testRunBailsIfProcessPaginatedEventsFails()
+    {
+        $mockExceptionMessage = 'Failed to process events';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $mockConfig = (object) [
+            'code' => (object) [
+                'username' => 'user',
+            ],
+        ];
+
+        $mockUserApi = $this->createMock(UserApi::class);
+        $mockClient = $this->createMock(Client::class);
+        $mockClient->method('api')
+            ->willReturn($mockUserApi);
+
+        $mockPager = $this->createMock(Pager::class);
+        $mockPager->method('fetch')
+            ->willReturn([]);
+        $mockPager->method('fetchNext')
+            ->willReturn([]);
+        $mockPager->expects($this->once())
+            ->method('hasNext')
+            ->willReturn(true);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'config', $mockConfig ],
+                [ 'codeClient', $mockClient ],
+                [ 'codeClientPager', $mockPager ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->exactly(2))
+            ->method('debug')
+            ->withConsecutive(
+                [ $this->anything() ],
+                [ $this->equalTo('Processing page 2 of api results') ]
+            );
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($mockExceptionMessage);
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'processEvents',
+            ])
+            ->getMock();
+        $code->method('processEvents')
+            ->will($this->onConsecutiveCalls(
+                null,
+                $this->throwException($mockException)
+            ));
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
     }
 
     public function testProcessEventChecksEventExists()
