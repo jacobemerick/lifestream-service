@@ -39,18 +39,22 @@ class Code implements CronInterface, LoggerAwareInterface
         $pager = $this->container->get('codeClientPager');
         $userApi = $client->api('user');
 
-        // @todo how does this api fail? what does it look like?
-        $events = $pager->fetch($userApi, 'publicEvents', [ 'jacobemerick' ]);
-        $this->processEvents($events);
-
-        $this->logger->debug("Processing page {$page} of api results");
+        $username = $this->container->get('config')->code->username;
+        try {
+            $events = $pager->fetch($userApi, 'publicEvents', [ $username ]);
+            $this->logger->debug("Processing page {$page} of api results");
+            $this->processEvents($events);
+        } catch (Exception $exception) {
+            $this->logger->error($exception->getMessage());
+            return;
+        }
 
         while ($pager->hasNext()) {
             $page++;
-            $this->logger->debug("Processing page {$page} of api results");
 
-            $events = $pager->fetchNext();
             try {
+                $events = $pager->fetchNext();
+                $this->logger->debug("Processing page {$page} of api results");
                 $this->processEvents($events);
             } catch (Exception $exception) {
                 $this->logger->error($exception->getMessage());
