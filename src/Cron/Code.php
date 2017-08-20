@@ -7,8 +7,6 @@ use DateTimeZone;
 use Exception;
 use SimpleXMLElement;
 
-use Github\Client;
-use Github\ResultPager as Pager;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Code as CodeModel;
 use Psr\Log\LoggerAwareInterface;
@@ -38,8 +36,8 @@ class Code implements CronInterface, LoggerAwareInterface
         $page = 1;
 
         $client = $this->container->get('codeClient');
+        $pager = $this->container->get('codeClientPager');
         $userApi = $client->api('user');
-        $pager = new Pager($client);
 
         // @todo how does this api fail? what does it look like?
         $events = $pager->fetch($userApi, 'publicEvents', [ 'jacobemerick' ]);

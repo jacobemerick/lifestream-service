@@ -74,6 +74,12 @@ $di->set('bookClient', $di->lazyNew(
 ));
 
 $di->set('codeClient', $di->lazyNew('Github\Client'));
+$di->set('codeClientPager', $di->lazyNew(
+    'Github\ResultPager',
+    [
+        'client' => $di->lazyGet('codeClient'),
+    ]
+));
 
 $di->set('distanceClient', $di->lazyNew(
     'GuzzleHttp\Client',
