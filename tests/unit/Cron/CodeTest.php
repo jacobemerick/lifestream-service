@@ -615,25 +615,269 @@ class CodeTest extends TestCase
         $code->run();
     }
 
-    public function testProcessEventChecksEventExists()
+    public function testProcessEventsChecksEventExists()
     {
-        $this->markTestIncomplete();
+        $events = [[
+            'id' => '123',
+        ]];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'timezone', $mockDateTimeZone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEventExists',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->expects($this->once())
+            ->method('checkEventExists')
+            ->with(
+                $this->equalTo($mockCodeModel),
+                $this->equalTo($events[0]['id'])
+            );
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $reflectedProcessEventsMethod = $reflectedCode->getMethod('processEvents');
+        $reflectedProcessEventsMethod->setAccessible(true);
+        $reflectedProcessEventsMethod->invokeArgs($code, [
+            $events,
+        ]);
     }
 
-    public function testProcessEventIgnoresEventIfExists()
+    public function testProcessEventsBailsIfExists()
     {
-        $this->markTestIncomplete();
+        $events = [[
+            'id' => '123',
+        ]];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'timezone', $mockDateTimeZone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEventExists',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->method('checkEventExists')
+            ->willReturn(true);
+        $code->expects($this->never())
+            ->method('insertEvent');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $reflectedProcessEventsMethod = $reflectedCode->getMethod('processEvents');
+        $reflectedProcessEventsMethod->setAccessible(true);
+        $reflectedProcessEventsMethod->invokeArgs($code, [
+            $events,
+        ]);
     }
 
-    public function testProcessEventInsertsEventIfNotExists()
+    public function testProcessEventsInsertsEventIfNotExists()
     {
-        $this->markTestIncomplete();
+        $events = [[
+            'id' => '123',
+        ]];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'timezone', $mockDateTimeZone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEventExists',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->method('checkEventExists')
+            ->willReturn(false);
+        $code->expects($this->once())
+            ->method('insertEvent')
+            ->with(
+                $this->equalTo($mockCodeModel),
+                $events[0],
+                $this->equalTo($mockDateTimeZone)
+            );
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $reflectedProcessEventsMethod = $reflectedCode->getMethod('processEvents');
+        $reflectedProcessEventsMethod->setAccessible(true);
+        $reflectedProcessEventsMethod->invokeArgs($code, [
+            $events,
+        ]);
     }
 
-    public function testProcessEventLogsSuccessfulInserts()
+    public function testProcessEventsLogsSuccessfulInserts()
     {
-        $this->markTestIncomplete();
+        $events = [[
+            'id' => '123',
+        ]];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'timezone', $mockDateTimeZone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Inserted new event: 123'));
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEventExists',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->method('checkEventExists')
+            ->willReturn(false);
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $reflectedProcessEventsMethod = $reflectedCode->getMethod('processEvents');
+        $reflectedProcessEventsMethod->setAccessible(true);
+        $reflectedProcessEventsMethod->invokeArgs($code, [
+            $events,
+        ]);
     }
+
+    public function testProcessEventsHandlesArray()
+    {
+        $events = [
+            [
+                'id' => '123',
+            ],
+            [
+                'id' => '456',
+            ],
+        ];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockDateTimeZone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'timezone', $mockDateTimeZone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo('Inserted new event: 456'));
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkEventExists',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->expects($this->exactly(2))
+            ->method('checkEventExists')
+            ->withConsecutive(
+                [ $this->anything(), $events[0]['id'] ],
+                [ $this->anything(), $events[1]['id'] ]
+            )
+            ->will($this->onConsecutiveCalls(true, false));
+        $code->expects($this->once())
+            ->method('insertEvent')
+            ->with(
+                $this->anything(),
+                $events[1],
+                $this->anything()
+            );
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $reflectedProcessEventsMethod = $reflectedCode->getMethod('processEvents');
+        $reflectedProcessEventsMethod->setAccessible(true);
+        $reflectedProcessEventsMethod->invokeArgs($code, [
+            $events,
+        ]);
+    }
+
 
     public function testCheckEventExistsPullsFromCodeModel()
     {
