@@ -12,7 +12,8 @@
         "guzzlehttp/guzzle": "^6.3",
         "monolog/monolog": "^1.23",
         "knplabs/github-api": "^2.5",
-        "php-http/guzzle6-adapter": "^1.1"
+        "php-http/guzzle6-adapter": "^1.1",
+        "abraham/twitteroauth": "^0.7.4"
     },
     "require-dev": {
         "codeclimate/php-test-reporter": "^0.4.4",

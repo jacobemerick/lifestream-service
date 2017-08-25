@@ -92,6 +92,16 @@ $di->set('distanceClient', $di->lazyNew(
     ]]
 ));
 
+$di->set('twitterClient', $di->lazyNew(
+    'Abraham\TwitterOAuth\TwitterOAuth',
+    [
+        'consumerKey' => $config->twitter->consumerKey,
+        'consumerSecret' => $config->twitter->consumerSecret,
+        'oauthToken' => $config->twitter->oauthToken,
+        'oauthSecret' => $config->twitter->oauthSecret,
+    ]
+));
+
 // switch to determine which cron to run
 $opts = getopt('s:');
 if (!$opts['s']) {
@@ -132,6 +142,9 @@ switch ($opts['s']) {
         break;
     case 'distance':
         $cron = new Cron\Distance($di);
+        break;
+    case 'twitter':
+        $cron = new Cron\Twitter($di);
         break;
     default:
         throw new Exception('Unrecognized cron passed in');
