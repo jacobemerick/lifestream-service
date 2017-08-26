@@ -26,7 +26,7 @@ class Twitter
     public function getTweetByTweetId($tweetId)
     {
         $query = "
-            SELECT `id`, `tweet_id`, `datetime`, `metadata`
+            SELECT `id`, `datetime`, `metadata`
             FROM `twitter`
             WHERE `tweet_id` = :tweet_id";
 
@@ -57,5 +57,27 @@ class Twitter
 
         $insertTweetCount = $this->extendedPdo->fetchAffected($query, $bindings);
         return $insertTweetCount === 1;
+    }
+
+    /**
+     * @param string $tweetId
+     * @param string $metadata
+     * @return boolean
+     */
+    public function updateTweet($tweetId, $metadata)
+    {
+        $query = "
+            UPDATE `twitter`
+            SET `metadata` = :metadata
+            WHERE `tweet_id` = :tweet_id
+            LIMIT 1";
+
+        $bindings = [
+            'tweet_id' => $tweetId,
+            'metadata' => $metadata,
+        ];
+
+        $updateTweetCount = $this->extendedPdo->fetchAffected($query, $bindings);
+        return $updateTweetCount === 1;
     }
 }

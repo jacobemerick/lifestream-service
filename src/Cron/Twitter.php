@@ -2,6 +2,8 @@
 
 namespace Jacobemerick\LifestreamService\Cron;
 
+use DateTime;
+use DateTimeZone;
 use Exception;
 use stdclass;
 
@@ -51,7 +53,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
             $this->logger->debug("Processing page {$page} of tweets");
 
             foreach ($tweets as $tweet) {
-                $maxId = (string) $tweet->id;
+                $maxId = $tweet->id_str;
                 try {
                     $this->processTweet($this->container->get('twitterModel'), $tweet);
                 } catch (Exception $exception) {
@@ -59,7 +61,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
                     return;
                 }
             }
-
+exit('stahp');
             $page++;
         }
     }
@@ -95,8 +97,87 @@ class Twitter implements CronInterface, LoggerAwareInterface
      */
     protected function processTweet(TwitterModel $twitterModel, stdclass $tweet)
     {
-        // if tweet does not exist, insert and return
-        // else if exist, check metadata and update if needed
+        $tweetExists = $this->checkTweetExists($twitterModel, $tweet->id_str);
+        if (!$tweetExists) {
+            $this->insertTweet($twitterModel, $tweet, $this->container->get('timezone'));
+            $this->logger->debug("Inserted new tweet: {$tweet->id_str}");
+            return true;
+        }
+
+        $tweetUpdated = $this->checkTweetMetadata($twitterModel, $tweet->id_str, $tweet);
+        if ($tweetUpdated) {
+            $this->updateTweet($twitterModel, $tweet->id_str, $tweet);
+            $this->logger->debug("Updated tweet: {$tweet->id_str}");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param TwitterModel $twitterModel
+     * @param string $tweetId
+     * @return boolean
+     */
+    protected function checkTweetExists(TwitterModel $twitterModel, $tweetId)
+    {
+        $tweet = $twitterModel->getTweetByTweetId($tweetId);
+        return $tweet !== false;
+    }
+
+    /**
+     * @param TwitterModel $twitterModel
+     * @param stdclass $tweet
+     * @param DateTimeZone $timezone
+     * @return boolean
+     */
+    protected function insertTweet(TwitterModel $twitterModel, stdclass $tweet, DateTimeZone $timezone)
+    {
+        $datetime = new DateTime($tweet->created_at);
+        $datetime->setTimezone($timezone);
+
+        $result = $twitterModel->insertTweet(
+            $tweet->id_str,
+            $datetime,
+            json_encode($tweet)
+        );
+
+        if (!$result) {
+            throw new Exception("Error while trying to insert new tweet: {$tweet->id_str}");
+        }
+
+        return true;
+    }
+
+    /**
+     * @param TwitterModel $twitterModel
+     * @param string $tweetId
+     * @param stdclass $tweet
+     * @return boolean
+     */
+    protected function checkTweetMetadata(TwitterModel $twitterModel, $tweetId, stdclass $tweet)
+    {
+        $metadata = $twitterModel->getTweetByTweetId($tweetId)['metadata'];
+        return $metadata !== json_encode($tweet);
+    }
+
+    /**
+     * @param TwitterModel $twitterModel
+     * @param string $tweetId
+     * @param stdclass $tweet
+     * @return boolean
+     */
+    protected function updateTweet(TwitterModel $twitterModel, $tweetId, stdclass $tweet)
+    {
+        $result = $twitterModel->updateTweet(
+            $tweetId,
+            json_encode($tweet)
+        );
+
+        if (!$result) {
+            throw new Exception("Error while trying to update tweet: {$tweetId}");
+        }
+
         return true;
     }
 }
