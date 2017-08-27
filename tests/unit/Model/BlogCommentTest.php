@@ -55,7 +55,7 @@ class BlogCommentTest extends TestCase
             'id' => 1,
             'permalink' => 'http://site.com/some-post#comment-123',
             'datetime' => '2016-06-30 12:00:00',
-            'metdata' => '{"key":"value"}',
+            'metadata' => '{"key":"value"}',
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
