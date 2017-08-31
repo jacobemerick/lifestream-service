@@ -61,7 +61,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
                     return;
                 }
             }
-exit('stahp');
+
             $page++;
         }
     }
