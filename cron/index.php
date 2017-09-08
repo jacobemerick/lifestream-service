@@ -50,6 +50,7 @@ $di->set('codeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Code'))
 $di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
 $di->set('twitterModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Twitter'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
+$di->set('videoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Video'));
 
 // set up clients
 $di->set('blogClient', $di->lazyNew(
@@ -101,6 +102,13 @@ $di->set('twitterClient', $di->lazyNew(
         'oauthToken' => $config->twitter->oauthToken,
         'oauthSecret' => $config->twitter->oauthSecret,
     ]
+));
+
+$di->set('videoClient', $di->lazyNew(
+    'Madcoda\Youtube',
+    [[
+        'key' => $config->video->key,
+    ]]
 ));
 
 // switch to determine which cron to run

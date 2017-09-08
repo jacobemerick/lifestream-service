@@ -176,9 +176,9 @@ SHOW WARNINGS;
 
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `youtube`;
+DROP TABLE IF EXISTS `video`;
 
-CREATE TABLE `youtube` (
+CREATE TABLE `video` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `video_id` varchar(15) NOT NULL DEFAULT '',
   `datetime` datetime NOT NULL,
