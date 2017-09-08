@@ -6,6 +6,7 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use ReflectionClass;
+use stdclass;
 
 use PHPUnit\Framework\TestCase;
 
@@ -524,6 +525,31 @@ class TwitterTest extends TestCase
         $this->assertEquals($tweets, $result);
     }
 
+    public function testProcessTweetChecksTweetExists()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testProcessTweetInsertsIfTweetDoesNotExist()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testProcessTweetChecksTweetUpdated()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testProcessTweetUpdatesIfTweetHasBeenUpdated()
+    {
+        $this->markTestIncomplete();
+    }
+
+    public function testProcessTweetReturnsFalseIfNoChange()
+    {
+        $this->markTestIncomplete();
+    }
+
     public function testCheckTweetExistsPullsFromTwitterModel()
     {
         $tweetId = '123';
@@ -819,6 +845,187 @@ class TwitterTest extends TestCase
             $mockTwitterModel,
             $mockTweet,
             $mockDateTimeZone,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    public function testCheckTweetUpdatedPullsFromTwitterModel()
+    {
+        $tweetId = '123';
+        $tweet = new stdclass();
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->expects($this->once())
+            ->method('getTweetByTweetId')
+            ->with(
+                $this->equalTo($tweetId)
+            );
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedCheckTweetUpdatedMethod = $reflectedTwitter->getMethod('checkTweetUpdated');
+        $reflectedCheckTweetUpdatedMethod->setAccessible(true);
+
+        $reflectedCheckTweetUpdatedMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweetId,
+            $tweet,
+        ]);
+    }
+
+    public function testCheckTweetUpdatedReturnsTrueIfUpdated()
+    {
+        $oldTweet = (object) [
+            'id' => '123',
+        ];
+        $newTweet = (object) [
+            'id' => '456',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->method('getTweetByTweetId')
+            ->willReturn([
+                'metadata' => json_encode($oldTweet),
+            ]);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedCheckTweetUpdatedMethod = $reflectedTwitter->getMethod('checkTweetUpdated');
+        $reflectedCheckTweetUpdatedMethod->setAccessible(true);
+
+        $result = $reflectedCheckTweetUpdatedMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            '',
+            $newTweet,
+        ]);
+
+        $this->assertTrue($result);
+    }
+
+    public function testCheckTweetUpdatedReturnsFalseIfNotUpdated()
+    {
+        $tweet = (object) [
+            'id' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->method('getTweetByTweetId')
+            ->willReturn([
+                'metadata' => json_encode($tweet),
+            ]);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedCheckTweetUpdatedMethod = $reflectedTwitter->getMethod('checkTweetUpdated');
+        $reflectedCheckTweetUpdatedMethod->setAccessible(true);
+
+        $result = $reflectedCheckTweetUpdatedMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            '',
+            $tweet,
+        ]);
+
+        $this->assertFalse($result);
+    }
+
+    public function testUpdateTweetSendsValuesToModel()
+    {
+        $tweetId = '123';
+        $tweet = (object) [
+            'id' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->expects($this->once())
+            ->method('updateTweet')
+            ->with(
+                $this->equalTo($tweetId),
+                $this->equalTo(json_encode($tweet))
+            )
+            ->willReturn(true);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedUpdateTweetMethod = $reflectedTwitter->getMethod('updateTweet');
+        $reflectedUpdateTweetMethod->setAccessible(true);
+
+        $reflectedUpdateTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweetId,
+            $tweet,
+        ]);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Error while trying to update tweet: 123
+     */
+    public function testUpdateTweetThrowsExceptionIfModelFails()
+    {
+        $tweet = (object) [
+            'id' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->method('updateTweet')
+            ->willReturn(false);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedUpdateTweetMethod = $reflectedTwitter->getMethod('updateTweet');
+        $reflectedUpdateTweetMethod->setAccessible(true);
+
+        $reflectedUpdateTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            '123',
+            $tweet,
+        ]);
+    }
+
+    public function testUpdateTweetReturnsTrueIfModelSucceeds()
+    {
+        $tweet = (object) [
+            'id' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTwitterModel->method('updateTweet')
+            ->willReturn(true);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+        $reflectedUpdateTweetMethod = $reflectedTwitter->getMethod('updateTweet');
+        $reflectedUpdateTweetMethod->setAccessible(true);
+
+        $result = $reflectedUpdateTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            '',
+            $tweet,
         ]);
 
         $this->assertTrue($result);

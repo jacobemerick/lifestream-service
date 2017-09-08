@@ -104,7 +104,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
             return true;
         }
 
-        $tweetUpdated = $this->checkTweetMetadata($twitterModel, $tweet->id_str, $tweet);
+        $tweetUpdated = $this->checkTweetUpdated($twitterModel, $tweet->id_str, $tweet);
         if ($tweetUpdated) {
             $this->updateTweet($twitterModel, $tweet->id_str, $tweet);
             $this->logger->debug("Updated tweet: {$tweet->id_str}");
@@ -155,7 +155,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
      * @param stdclass $tweet
      * @return boolean
      */
-    protected function checkTweetMetadata(TwitterModel $twitterModel, $tweetId, stdclass $tweet)
+    protected function checkTweetUpdated(TwitterModel $twitterModel, $tweetId, stdclass $tweet)
     {
         $metadata = $twitterModel->getTweetByTweetId($tweetId)['metadata'];
         return $metadata !== json_encode($tweet);
