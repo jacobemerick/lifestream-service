@@ -527,27 +527,255 @@ class TwitterTest extends TestCase
 
     public function testProcessTweetChecksTweetExists()
     {
-        $this->markTestIncomplete();
+        $tweet = (object) [
+            'id_str' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkTweetExists',
+                'checkTweetUpdated',
+                'insertTweet',
+                'updateTweet',
+            ])
+            ->getMock();
+        $twitter->expects($this->once())
+            ->method('checkTweetExists')
+            ->with(
+                $this->equalTo($mockTwitterModel),
+                $this->equalTo($tweet->id_str)
+            )
+            ->willReturn(true);
+        $twitter->expects($this->never())
+            ->method('insertTweet');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweet,
+        ]);
     }
 
     public function testProcessTweetInsertsIfTweetDoesNotExist()
     {
-        $this->markTestIncomplete();
+        $tweet = (object) [
+            'id_str' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+        $mockTimezone = $this->createMock(DateTimeZone::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'timezone', $mockTimezone ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with(
+                $this->equalTo('Inserted new tweet: 123')
+            );
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkTweetExists',
+                'checkTweetUpdated',
+                'insertTweet',
+                'updateTweet',
+            ])
+            ->getMock();
+        $twitter->method('checkTweetExists')
+            ->willReturn(false);
+        $twitter->expects($this->never())
+            ->method('checkTweetUpdated');
+        $twitter->expects($this->once())
+            ->method('insertTweet')
+            ->with(
+                $this->equalTo($mockTwitterModel),
+                $this->equalTo($tweet),
+                $this->equalTo($mockTimezone)
+            );
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedContainerProperty = $reflectedTwitter->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($twitter, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $result = $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweet,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testProcessTweetChecksTweetUpdated()
     {
-        $this->markTestIncomplete();
+        $tweet = (object) [
+            'id_str' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkTweetExists',
+                'checkTweetUpdated',
+                'insertTweet',
+                'updateTweet',
+            ])
+            ->getMock();
+        $twitter->method('checkTweetExists')
+            ->willReturn(true);
+        $twitter->expects($this->once())
+            ->method('checkTweetUpdated')
+            ->with(
+                $this->equalTo($mockTwitterModel),
+                $this->equalTo($tweet->id_str),
+                $this->equalTo($tweet)
+            )
+            ->willReturn(false);
+        $twitter->expects($this->never())
+            ->method('updateTweet');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweet,
+        ]);
     }
 
     public function testProcessTweetUpdatesIfTweetHasBeenUpdated()
     {
-        $this->markTestIncomplete();
+        $tweet = (object) [
+            'id_str' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with(
+                $this->equalTo('Updated tweet: 123')
+            );
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkTweetExists',
+                'checkTweetUpdated',
+                'insertTweet',
+                'updateTweet',
+            ])
+            ->getMock();
+        $twitter->method('checkTweetExists')
+            ->willReturn(true);
+        $twitter->method('checkTweetUpdated')
+            ->willReturn(true);
+        $twitter->expects($this->once())
+            ->method('updateTweet')
+            ->with(
+                $this->equalTo($mockTwitterModel),
+                $this->equalTo($tweet->id_str),
+                $this->equalTo($tweet)
+            );
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $result = $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweet,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testProcessTweetReturnsFalseIfNoChange()
     {
-        $this->markTestIncomplete();
+        $tweet = (object) [
+            'id_str' => '123',
+        ];
+
+        $mockTwitterModel = $this->createMock(TwitterModel::class);
+
+        $mockLogger = $this->createMock(Logger::class);
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkTweetExists',
+                'checkTweetUpdated',
+                'insertTweet',
+                'updateTweet',
+            ])
+            ->getMock();
+        $twitter->method('checkTweetExists')
+            ->willReturn(true);
+        $twitter->method('checkTweetUpdated')
+            ->willReturn(false);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $result = $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $mockTwitterModel,
+            $tweet,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testCheckTweetExistsPullsFromTwitterModel()
