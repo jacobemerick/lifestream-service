@@ -7,7 +7,7 @@ use DateTimeZone;
 use Exception;
 use stdClass;
 
-use Madcoda\Youtube as Client;
+use Madcoda\Youtube\Youtube as Client;
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Model\Video as VideoModel;
 use Psr\Log\LoggerAwareInterface;
@@ -35,8 +35,8 @@ class Video implements CronInterface, LoggerAwareInterface
     public function run()
     {
         try {
-            $playlist = $this->container->get('config')->youtube->playlist;
-            $videos = $this->fetchEntries($this->container->get('videoClient'), $playlist);
+            $playlist = $this->container->get('config')->video->playlist;
+            $videos = $this->fetchVideos($this->container->get('videoClient'), $playlist);
         } catch (Exception $exception) {
             $this->logger->error($exception->getMessage());
             return;
@@ -45,13 +45,16 @@ class Video implements CronInterface, LoggerAwareInterface
         $this->logger->debug("Processing videos from api result");
 
         foreach ($videos as $video) {
-            $videoExists = $this->checkVideoExists($this->container->get('videoModel'), $video->videoId)
+            $videoExists = $this->checkVideoExists(
+                $this->container->get('videoModel'),
+                $video->contentDetails->videoId
+            );
             if ($videoExists) {
                 continue;
             }
 
             try {
-                $this->insertEntry(
+                $this->insertVideo(
                     $this->container->get('videoModel'),
                     $video,
                     $this->container->get('timezone')
@@ -61,7 +64,7 @@ class Video implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $this->logger->debug("Inserted new video: {$video->videoId}");
+            $this->logger->debug("Inserted new video: {$video->contentDetails->videoId}");
         }
     }
 
@@ -94,17 +97,17 @@ class Video implements CronInterface, LoggerAwareInterface
      */
     protected function insertVideo(VideoModel $videoModel, stdClass $video, DateTimeZone $timezone)
     {
-        $datetime = new DateTime($entry->snippet->publishedAt);
+        $datetime = new DateTime($video->snippet->publishedAt);
         $datetime->setTimezone($timezone);
 
         $result = $videoModel->insertVideo(
-            $video->videoId,
+            $video->contentDetails->videoId,
             $datetime,
             json_encode($video)
         );
 
         if (!$result) {
-            throw new Exception("Error while trying to insert new video: {$video->videoId}");
+            throw new Exception("Error while trying to insert new video: {$video->contentDetails->videoId}");
         }
 
         return true;

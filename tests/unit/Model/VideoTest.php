@@ -31,7 +31,7 @@ class VideoTest extends TestCase
 
         $query = "
             SELECT `id`, `datetime`, `metadata`
-            FROM `distance`
+            FROM `video`
             WHERE `video_id` = :video_id";
         $bindings = [
             'video_id' => $videoId,
@@ -74,7 +74,7 @@ class VideoTest extends TestCase
         $metadata = '{"key":"value"}';
 
         $query = "
-            INSERT INTO `distance` (`video_id`, `datetime`, `metadata`)
+            INSERT INTO `video` (`video_id`, `datetime`, `metadata`)
             VALUES (:video_id, :datetime, :metadata)";
         $bindings = [
             'video_id' => $videoId,

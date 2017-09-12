@@ -27,7 +27,7 @@ class Video
     {
         $query = "
             SELECT `id`, `datetime`, `metadata`
-            FROM `distance`
+            FROM `video`
             WHERE `video_id` = :video_id";
 
         $bindings = [
@@ -46,7 +46,7 @@ class Video
     public function insertVideo($videoId, DateTime $datetime, $metadata)
     {
         $query = "
-            INSERT INTO `distance` (`video_id`, `datetime`, `metadata`)
+            INSERT INTO `video` (`video_id`, `datetime`, `metadata`)
             VALUES (:video_id, :datetime, :metadata)";
 
         $bindings = [

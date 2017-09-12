@@ -105,7 +105,7 @@ $di->set('twitterClient', $di->lazyNew(
 ));
 
 $di->set('videoClient', $di->lazyNew(
-    'Madcoda\Youtube',
+    'Madcoda\Youtube\Youtube',
     [[
         'key' => $config->video->key,
     ]]
@@ -154,6 +154,9 @@ switch ($opts['s']) {
         break;
     case 'twitter':
         $cron = new Cron\Twitter($di);
+        break;
+    case 'video':
+        $cron = new Cron\Video($di);
         break;
     default:
         throw new Exception('Unrecognized cron passed in');
