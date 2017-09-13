@@ -48,6 +48,7 @@ $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'))
 $di->set('bookModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Book'));
 $di->set('codeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Code'));
 $di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
+$di->set('photoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Photo'));
 $di->set('twitterModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Twitter'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 $di->set('videoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Video'));
