@@ -54,26 +54,12 @@ class Photo implements CronInterface, LoggerAwareInterface
 
             foreach ($mediaList as $media) {
                 $maxId = $media->id;
-
-                $mediaExists = $this->checkMediaExists($this->container->get('photoModel'), $media->id);
-                if ($mediaExists) {
-                    continue;
-                }
-
-                // todo updated (likes)
-
                 try {
-                    $this->insertMedia(
-                        $this->container->get('photoModel'),
-                        $media,
-                        $this->container->get('timezone')
-                    );
+                    $this->processMedia($this->container->get('photoModel'), $media);
                 } catch (Exception $exception) {
                     $this->logger->error($exception->getMessage());
                     return;
                 }
-
-                $this->logger->debug("Inserted new photo media: {$media->id}");
             }
 
             $page++;
@@ -112,6 +98,30 @@ class Photo implements CronInterface, LoggerAwareInterface
 
     /**
      * @param PhotoModel $photoModel
+     * @param stdclass $media
+     * @return boolean
+     */
+    protected function processMedia(PhotoModel $photoModel, stdclass $media)
+    {
+        $mediaExists = $this->checkMediaExists($photoModel, $media->id);
+        if (!$mediaExists) {
+            $this->insertMedia($photoModel, $media, $this->container->get('timezone'));
+            $this->logger->debug("Inserted new media: {$media->id}");
+            return true;
+        }
+
+        $mediaUpdated = $this->checkMediaUpdated($photoModel, $media->id, $media);
+        if ($mediaUpdated) {
+            $this->updateMedia($photoModel, $media->id, $media);
+            $this->logger->debug("Updated media: {$media->id}");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param PhotoModel $photoModel
      * @param string $mediaId
      * @return boolean
      */
@@ -129,12 +139,11 @@ class Photo implements CronInterface, LoggerAwareInterface
      */
     protected function insertMedia(PhotoModel $photoModel, stdClass $media, DateTimeZone $timezone)
     {
-        $datetime = new DateTime($media->at);
+        $datetime = new DateTime("@{$media->created_time}");
         $datetime->setTimezone($timezone);
 
         $result = $photoModel->insertMedia(
             $media->id,
-            $media->workout->activity_type,
             $datetime,
             json_encode($media)
         );
@@ -143,6 +152,45 @@ class Photo implements CronInterface, LoggerAwareInterface
             throw new Exception("Error while trying to insert new media: {$media->id}");
         }
 
+        return true;
+    }
+
+    /**
+     * @param PhotoModel $photoModel
+     * @param string $mediaId
+     * @param stdclass $media
+     * @return boolean
+     */
+    protected function checkMediaUpdated(PhotoModel $photoModel, $mediaId, stdclass $media)
+    {
+        $metadata = $photoModel->getMediaByMediaId($mediaId)['metadata'];
+        $metadata = json_decode($metadata);
+
+        if ($metadata->likes->count != $media->likes->count) {
+            return true;
+        }
+        if ($metadata->comments->count != $media->comments->count) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param PhotoModel $photoModel
+     * @param string $mediaId
+     * @param stdclass $media
+     * @return boolean
+     */
+    protected function updateMedia(PhotoModel $photoModel, $mediaId, stdclass $media)
+    {
+        $result = $photoModel->updateMedia(
+            $mediaId,
+            json_encode($media)
+        );
+        if (!$result) {
+            throw new Exception("Error while trying to update media: {$mediaId}");
+        }
         return true;
     }
 }

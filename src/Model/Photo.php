@@ -58,4 +58,26 @@ class Photo
         $insertMediaCount = $this->extendedPdo->fetchAffected($query, $bindings);
         return $insertMediaCount === 1;
     }
+
+    /**
+     * @param string $mediaId
+     * @param string $metadata
+     * @return boolean
+     */
+    public function updateMedia($mediaId, $metadata)
+    {
+        $query = "
+            UPDATE `photo`
+            SET `metadata` = :metadata
+            WHERE `media_id` = :media_id
+            LIMIT 1";
+
+        $bindings = [
+            'media_id' => $mediaId,
+            'metadata' => $metadata,
+        ];
+
+        $updateMediaCount = $this->extendedPdo->fetchAffected($query, $bindings);
+        return $updateMediaCount === 1;
+    }
 }
