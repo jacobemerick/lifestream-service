@@ -117,4 +117,55 @@ class PhotoTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    public function testUpdateMediaSendsParams()
+    {
+        $mediaId = '123';
+        $metadata = '{"key":"value"}';
+
+        $query = "
+            UPDATE `photo`
+            SET `metadata` = :metadata
+            WHERE `media_id` = :media_id
+            LIMIT 1";
+        $bindings = [
+            'media_id' => $mediaId,
+            'metadata' => $metadata,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAffected')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Photo($mockPdo);
+        $model->updateMedia($mediaId, $metadata);
+    }
+
+    public function testUpdateMediaReturnsTrueIfSuccess()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(1);
+
+        $model = new Photo($mockPdo);
+        $result = $model->updateMedia('', '');
+
+        $this->assertTrue($result);
+    }
+
+    public function testUpdateMediaReturnsFalseIfFailure()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(0);
+
+        $model = new Photo($mockPdo);
+        $result = $model->updateMedia('', '');
+
+        $this->assertFalse($result);
+    }
 }
