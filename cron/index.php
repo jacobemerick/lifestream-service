@@ -95,6 +95,20 @@ $di->set('distanceClient', $di->lazyNew(
     ]]
 ));
 
+$di->set('photoClient', $di->lazyNew(
+    'GuzzleHttp\Client',
+    [[
+        'base_uri' => $config->photo->baseUri,
+        'headers' => [
+            'User-Agent' => 'lifestream-service/1.0',
+            'Accept' => 'application/json',
+            'query' => [
+                'access_token' => $config->photo->token,
+            ],
+        ],
+    ]]
+));
+
 $di->set('twitterClient', $di->lazyNew(
     'Abraham\TwitterOAuth\TwitterOAuth',
     [
@@ -152,6 +166,9 @@ switch ($opts['s']) {
         break;
     case 'distance':
         $cron = new Cron\Distance($di);
+        break;
+    case 'photo':
+        $cron = new Cron\Photo($di);
         break;
     case 'twitter':
         $cron = new Cron\Twitter($di);
