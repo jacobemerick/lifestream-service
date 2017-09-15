@@ -102,9 +102,6 @@ $di->set('photoClient', $di->lazyNew(
         'headers' => [
             'User-Agent' => 'lifestream-service/1.0',
             'Accept' => 'application/json',
-            'query' => [
-                'access_token' => $config->photo->token,
-            ],
         ],
     ]]
 ));

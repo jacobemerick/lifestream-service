@@ -39,28 +39,33 @@ class Photo implements CronInterface, LoggerAwareInterface
 
         while (true) {
             try {
-                $media = $this->fetchMedia($this->container->get('photoClient'), $maxId);
+                $token = $this->container->get('config')->photo->token;
+                $mediaList = $this->fetchMedia($this->container->get('photoClient'), $token, $maxId);
             } catch (Exception $exception) {
                 $this->logger->error($exception->getMessage());
                 return;
             }
-var_dump($media); exit;
-            if (empty($media)) {
+
+            if (empty($mediaList)) {
                 break;
             }
 
             $this->logger->debug("Processing page {$page} of api results");
 
-            foreach ($media as $item) {
-                $itemExists = $this->checkEntryExists($this->container->get('photoModel'), $item->id);
-                if ($itemExists) {
+            foreach ($mediaList as $media) {
+                $maxId = $media->id;
+
+                $mediaExists = $this->checkMediaExists($this->container->get('photoModel'), $media->id);
+                if ($mediaExists) {
                     continue;
                 }
 
+                // todo updated (likes)
+
                 try {
-                    $this->insertEntry(
+                    $this->insertMedia(
                         $this->container->get('photoModel'),
-                        $item,
+                        $media,
                         $this->container->get('timezone')
                     );
                 } catch (Exception $exception) {
@@ -68,7 +73,7 @@ var_dump($media); exit;
                     return;
                 }
 
-                $this->logger->debug("Inserted new photo item: {$item->id}");
+                $this->logger->debug("Inserted new photo media: {$media->id}");
             }
 
             $page++;
@@ -77,63 +82,65 @@ var_dump($media); exit;
 
     /**
      * @param Client $client
+     * @param string $token
      * @param integer $maxId
      * @return array
      */
-    protected function fetchMedia(Client $client, $maxId = null)
+    protected function fetchMedia(Client $client, $token, $maxId = null)
     {
+        $queryParams = [
+            'access_token' => $token,
+        ];
+        if ($maxId) {
+            $queryParams['max_id'] = $maxId;
+        }
+
         $response = $client->request(
             'GET',
-            "users/self/media/recent"
+            "users/self/media/recent",
+            [ 'query' => $queryParams ]
         );
-/*,
-            [
-                'query' => [
-                    'count' => 50,
-                ],
-            ]
-        );
-*/
+
         if ($response->getStatusCode() !== 200) {
             throw new Exception("Error while trying to fetch media: {$response->getStatusCode()}");
         }
 
         $jsonString = (string) $response->getBody();
         $json = json_decode($jsonString);
-        return $json;
+        return $json->data;
     }
 
     /**
      * @param PhotoModel $photoModel
-     * @param string $itemId
+     * @param string $mediaId
      * @return boolean
      */
-    protected function checkEntryExists(PhotoModel $photoModel, $itemId)
+    protected function checkMediaExists(PhotoModel $photoModel, $mediaId)
     {
-        $item = $photoModel->getEntryByEntryId($itemId);
-        return $item !== false;
+        $media = $photoModel->getMediaByMediaId($mediaId);
+        return $media !== false;
     }
 
     /**
      * @param PhotoModel $photoModel
-     * @param stdClass $item
+     * @param stdClass $media
      * @param DateTimeZone $timezone
      * @return boolean
      */
-    protected function insertEntry(PhotoModel $photoModel, stdClass $item, DateTimeZone $timezone)
+    protected function insertMedia(PhotoModel $photoModel, stdClass $media, DateTimeZone $timezone)
     {
-        $datetime = new DateTime($item->at);
+        $datetime = new DateTime($media->at);
         $datetime->setTimezone($timezone);
 
-        $result = $photoModel->insertEntry(
-            $item->id,
-            $item->workout->activity_type,
+        $result = $photoModel->insertMedia(
+            $media->id,
+            $media->workout->activity_type,
             $datetime,
-            json_encode($item)
+            json_encode($media)
         );
 
         if (!$result) {
-            throw new Exception("Error while trying to insert new item: {$item->id}");
+            throw new Exception("Error while trying to insert new media: {$media->id}");
         }
 
         return true;
