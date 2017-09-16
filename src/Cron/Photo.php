@@ -72,7 +72,7 @@ class Photo implements CronInterface, LoggerAwareInterface
      * @param integer $maxId
      * @return array
      */
-    protected function fetchMedia(Client $client, $token, $maxId = null)
+    protected function fetchMedia(Client $client, $token, $maxId)
     {
         $queryParams = [
             'access_token' => $token,
