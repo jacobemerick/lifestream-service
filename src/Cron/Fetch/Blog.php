@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\LifestreamService\Cron;
+namespace Jacobemerick\LifestreamService\Cron\Fetch;
 
 use DateTime;
 use DateTimeZone;
@@ -9,12 +9,13 @@ use SimpleXMLElement;
 
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
-use Jacobemerick\LifestreamService\Model\BlogComment as BlogCommentModel;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
+use Jacobemerick\LifestreamService\Model\Blog as BlogModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
 
-class BlogComment implements CronInterface, LoggerAwareInterface
+class Blog implements CronInterface, LoggerAwareInterface
 {
 
     use LoggerAwareTrait;
@@ -28,32 +29,29 @@ class BlogComment implements CronInterface, LoggerAwareInterface
     public function __construct(Container $container)
     {
         $this->container = $container;
- 
+
         $this->logger = new NullLogger;
     }
 
     public function run()
     {
         try {
-            $comments = $this->fetchComments($this->container->get('blogClient'));
+            $posts = $this->fetchPosts($this->container->get('blogClient'));
         } catch (Exception $exception) {
             $this->logger->error($exception->getMessage());
             return;
         }
 
-        foreach ($comments as $comment) {
-            $commentExists = $this->checkCommentExists(
-                $this->container->get('blogCommentModel'),
-                (string) $comment->guid
-            );
-            if ($commentExists) {
+        foreach ($posts as $post) {
+            $postExists = $this->checkPostExists($this->container->get('blogModel'), (string) $post->guid);
+            if ($postExists) {
                 continue;
             }
 
             try {
-                $this->insertComment(
-                    $this->container->get('blogCommentModel'),
-                    $comment,
+                $this->insertPost(
+                    $this->container->get('blogModel'),
+                    $post,
                     $this->container->get('timezone')
                 );
             } catch (Exception $exception) {
@@ -61,16 +59,17 @@ class BlogComment implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $this->logger->debug("Inserted new blog comment: {$comment->guid}");
+            $this->logger->debug("Inserted new blog post: {$post->guid}");
         }
     }
 
     /**
      * @param Client $client
+     * @return array
      */
-    protected function fetchComments(Client $client)
+    protected function fetchPosts(Client $client)
     {
-        $response = $client->request('GET', 'rss-comments.xml');
+        $response = $client->request('GET', 'rss.xml');
         if ($response->getStatusCode() !== 200) {
             throw new Exception("Error while trying to fetch rss feed: {$response->getStatusCode()}");
         }
@@ -81,33 +80,30 @@ class BlogComment implements CronInterface, LoggerAwareInterface
     }
 
     /**
-     * @param BlogCommentModel $blogCommentModel
+     * @param BlogModel $blogModel
      * @param string $permalink
      * @return boolean
      */
-    protected function checkCommentExists(BlogCommentModel $blogCommentModel, $permalink)
+    protected function checkPostExists(BlogModel $blogModel, $permalink)
     {
-        $comment = $blogCommentModel->getCommentByPermalink($permalink);
-        return $comment !== false;
+        $post = $blogModel->getPostByPermalink($permalink);
+        return $post !== false;
     }
 
     /**
-     * @param BlogCommentModel $blogCommentModel
-     * @param SimpleXMLElement $comment
+     * @param BlogModel $blogModel
+     * @param SimpleXMLElement $post
      * @param DateTimeZone $timezone
      * @return boolean
      */
-    protected function insertComment(
-        BlogCommentModel $blogCommentModel,
-        SimpleXMLElement $comment,
-        DateTimeZone $timezone
-    ) {
-        $datetime = new DateTime($comment->pubDate);
+    protected function insertPost(BlogModel $blogModel, SimpleXMLElement $post, DateTimeZone $timezone)
+    {
+        $datetime = new DateTime($post->pubDate);
         $datetime->setTimezone($timezone);
 
-        $result = $blogCommentModel->insertComment((string) $comment->guid, $datetime, json_encode($comment));
+        $result = $blogModel->insertPost((string) $post->guid, $datetime, json_encode($post));
         if (!$result) {
-            throw new Exception("Error while trying to insert new comment: {$comment->guid}");
+            throw new Exception("Error while trying to insert new post: {$post->guid}");
         }
 
         return true;

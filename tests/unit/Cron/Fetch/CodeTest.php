@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\LifestreamService\Cron;
+namespace Jacobemerick\LifestreamService\Cron\Fetch;
 
 use DateTime;
 use DateTimeZone;
@@ -13,6 +13,7 @@ use Github\Client as Client;
 use Github\ResultPager as Pager;
 use Github\Api\User as UserApi;
 use Interop\Container\ContainerInterface as Container;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
 use Jacobemerick\LifestreamService\Model\Code as CodeModel;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Log\LoggerAwareInterface;

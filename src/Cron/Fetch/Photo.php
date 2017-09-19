@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\LifestreamService\Cron;
+namespace Jacobemerick\LifestreamService\Cron\Fetch;
 
 use DateTime;
 use DateTimeZone;
@@ -9,6 +9,7 @@ use stdClass;
 
 use GuzzleHttp\ClientInterface as Client;
 use Interop\Container\ContainerInterface as Container;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
 use Jacobemerick\LifestreamService\Model\Photo as PhotoModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;

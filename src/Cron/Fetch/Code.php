@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\LifestreamService\Cron;
+namespace Jacobemerick\LifestreamService\Cron\Fetch;
 
 use DateTime;
 use DateTimeZone;
@@ -8,6 +8,7 @@ use Exception;
 use SimpleXMLElement;
 
 use Interop\Container\ContainerInterface as Container;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
 use Jacobemerick\LifestreamService\Model\Code as CodeModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;

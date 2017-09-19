@@ -1,6 +1,6 @@
 <?php
 
-namespace Jacobemerick\LifestreamService\Cron;
+namespace Jacobemerick\LifestreamService\Cron\Fetch;
 
 use DateTime;
 use DateTimeZone;
@@ -9,6 +9,7 @@ use stdclass;
 
 use Abraham\TwitterOAuth\TwitterOAuth as Client;
 use Interop\Container\ContainerInterface as Container;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
 use Jacobemerick\LifestreamService\Model\Twitter as TwitterModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;

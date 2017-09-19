@@ -146,32 +146,32 @@ $di->set('logger', $di->lazyNew(
     ]
 ));
 
-use Jacobemerick\LifestreamService\Cron;
+use Jacobemerick\LifestreamService\Cron\Fetch;
 
 switch ($opts['s']) {
     case 'blog':
-        $cron = new Cron\Blog($di);
+        $cron = new Fetch\Blog($di);
         break;
     case 'blogComment':
-        $cron = new Cron\BlogComment($di);
+        $cron = new Fetch\BlogComment($di);
         break;
     case 'book':
-        $cron = new Cron\Book($di);
+        $cron = new Fetch\Book($di);
         break;
     case 'code':
-        $cron = new Cron\Code($di);
+        $cron = new Fetch\Code($di);
         break;
     case 'distance':
-        $cron = new Cron\Distance($di);
+        $cron = new Fetch\Distance($di);
         break;
     case 'photo':
-        $cron = new Cron\Photo($di);
+        $cron = new Fetch\Photo($di);
         break;
     case 'twitter':
-        $cron = new Cron\Twitter($di);
+        $cron = new Fetch\Twitter($di);
         break;
     case 'video':
-        $cron = new Cron\Video($di);
+        $cron = new Fetch\Video($di);
         break;
     default:
         throw new Exception('Unrecognized cron passed in');
