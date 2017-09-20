@@ -3,6 +3,7 @@
 namespace Jacobemerick\LifestreamService\Model;
 
 use Aura\Sql\ExtendedPdo;
+use DateTime;
 use PHPUnit\Framework\TestCase;
 
 class EventTest extends TestCase
@@ -32,7 +33,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1";
         $bindings = [];
 
@@ -58,7 +59,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 LIMIT 0, {$limit}";
         $bindings = [];
@@ -86,7 +87,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 LIMIT {$offset}, {$limit}";
         $bindings = [];
@@ -113,7 +114,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1 AND
                 `type`.`name` = :type_name";
         $bindings = [
@@ -142,7 +143,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1 AND
                 `user`.`name` = :user_name";
         $bindings = [
@@ -171,7 +172,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 ORDER BY `{$order}` ASC";
         $bindings = [];
@@ -199,7 +200,7 @@ class EventTest extends TestCase
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 ORDER BY `{$order}` DESC";
         $bindings = [];
@@ -237,5 +238,106 @@ class EventTest extends TestCase
         $result = $model->getEvents();
 
         $this->assertSame($types, $result);
+    }
+
+    public function testGetEventByTypeSendsParams()
+    {
+        $typeId = 1;
+        $typeLookupId = 123;
+
+        $query = "
+            SELECT `id`
+            FROM `event`
+            WHERE `type_id` = :type_id AND
+                  `type_lookup_id` = :type_lookup_id";
+        $bindings = [
+            'type_id' => $typeId,
+            'type_lookup_id' => $typeLookupId,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Event($mockPdo);
+        $model->getEventByType($typeId, $typeLookupId);
+    }
+
+    public function testGetEventByTypeReturnsEvent()
+    {
+        $event = [
+            'id' => 123,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchOne')
+            ->willReturn($event);
+
+        $model = new Event($mockPdo);
+        $result = $model->getEventByType(null, null);
+
+        $this->assertSame($event, $result);
+    }
+
+    public function testInsertEventSendsParams()
+    {
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+        $datetime = new DateTime();
+        $metadata = '{"key":"value"}';
+        $typeId = 1;
+        $typeLookupId = 123;
+
+        $query = "
+            INSERT INTO `event` (`description`, `description_html`, `datetime`, `metadata`,
+                                 `type_id`, `type_lookup_id`)
+            VALUES (:description, :description_html, :datetime, :metadata, :type_id, :type_lookup_id)";
+        $bindings = [
+            'description' => $description,
+            'description_html' => $descriptionHtml,
+            'datetime' => $datetime->format('Y-m-d H:i:s'),
+            'metadata' => $metadata,
+            'type_id' => $typeId,
+            'type_lookup_id' => $typeLookupId,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAffected')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Event($mockPdo);
+        $model->insertEvent($description, $descriptionHtml, $datetime, $metadata, $typeId, $typeLookupId);
+    }
+
+    public function testInsertEventReturnsTrueIfSuccess()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(1);
+
+        $model = new Event($mockPdo);
+        $result = $model->insertEvent('', '', new DateTime(), '', null, null);
+
+        $this->assertTrue($result);
+    }
+
+    public function testInsertEventReturnsFalseIfFailure()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(0);
+
+        $model = new Event($mockPdo);
+        $result = $model->insertEvent('', '', new DateTime(), '', null, null);
+
+        $this->assertFalse($result);
     }
 }

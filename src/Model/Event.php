@@ -3,6 +3,7 @@
 namespace Jacobemerick\LifestreamService\Model;
 
 use Aura\Sql\ExtendedPdo;
+use DateTime;
 
 class Event
 {
@@ -41,7 +42,7 @@ class Event
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
             INNER JOIN `user` ON `user`.`id` = `event`.`user`
-            INNER JOIN `type` ON `type`.`id` = `event`.`type`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1";
 
         $bindings = [];
@@ -67,5 +68,61 @@ class Event
         }
 
         return $this->extendedPdo->fetchAll($query, $bindings);
+    }
+
+    /**
+     * @param integer $typeId
+     * @param integer $typeLookupId
+     * @return array
+     */
+    public function getEventByType($typeId, $typeLookupId)
+    {
+        $query = "
+            SELECT `id`
+            FROM `event`
+            WHERE `type_id` = :type_id AND
+                  `type_lookup_id` = :type_lookup_id";
+
+        $bindings = [
+            'type_id' => $typeId,
+            'type_lookup_id' => $typeLookupId,
+        ];
+
+        return $this->extendedPdo->fetchOne($query, $bindings);
+    }
+
+    /**
+     * @param string $description
+     * @param string $descriptionHtml
+     * @param DateTime $datetime
+     * @param string $metadata
+     * @param integer $typeId
+     * @param integer $typeLookupId
+     * @return boolean
+     */
+    public function insertEvent(
+        $description,
+        $descriptionHtml,
+        DateTime $datetime,
+        $metadata,
+        $typeId,
+        $typeLookupId
+    ) {
+        $query = "
+            INSERT INTO `event` (`description`, `description_html`, `datetime`, `metadata`,
+                                 `type_id`, `type_lookup_id`)
+            VALUES (:description, :description_html, :datetime, :metadata, :type_id, :type_lookup_id)";
+
+        $bindings = [
+            'description' => $description,
+            'description_html' => $descriptionHtml,
+            'datetime' => $datetime->format('Y-m-d H:i:s'),
+            'metadata' => $metadata,
+            'type_id' => $typeId,
+            'type_lookup_id' => $typeLookupId,
+        ];
+
+        $insertEventCount = $this->extendedPdo->fetchAffected($query, $bindings);
+        return $insertEventCount === 1;
     }
 }
