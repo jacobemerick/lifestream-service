@@ -48,6 +48,7 @@ $di->set('blogModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Blog'))
 $di->set('bookModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Book'));
 $di->set('codeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Code'));
 $di->set('distanceModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Distance'));
+$di->set('eventModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Event'));
 $di->set('photoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Photo'));
 $di->set('twitterModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Twitter'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
@@ -147,10 +148,11 @@ $di->set('logger', $di->lazyNew(
 ));
 
 use Jacobemerick\LifestreamService\Cron\Fetch;
+use Jacobemerick\LifestreamService\Cron\Process;
 
 switch ($opts['s']) {
     case 'blog':
-        $cron = new Fetch\Blog($di);
+        $cron = new Process\Blog($di);
         break;
     case 'blogComment':
         $cron = new Fetch\BlogComment($di);

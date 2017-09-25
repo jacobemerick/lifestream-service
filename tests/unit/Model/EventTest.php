@@ -240,7 +240,7 @@ class EventTest extends TestCase
         $this->assertSame($types, $result);
     }
 
-    public function testGetEventByTypeSendsParams()
+    public function testGetEventByTypeIdSendsParams()
     {
         $typeId = 1;
         $typeLookupId = 123;
@@ -264,10 +264,10 @@ class EventTest extends TestCase
             );
 
         $model = new Event($mockPdo);
-        $model->getEventByType($typeId, $typeLookupId);
+        $model->getEventByTypeId($typeId, $typeLookupId);
     }
 
-    public function testGetEventByTypeReturnsEvent()
+    public function testGetEventByTypeIdReturnsEvent()
     {
         $event = [
             'id' => 123,
@@ -278,7 +278,7 @@ class EventTest extends TestCase
             ->willReturn($event);
 
         $model = new Event($mockPdo);
-        $result = $model->getEventByType(null, null);
+        $result = $model->getEventByTypeId(null, null);
 
         $this->assertSame($event, $result);
     }

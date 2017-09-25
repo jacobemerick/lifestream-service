@@ -75,7 +75,7 @@ class Event
      * @param integer $typeLookupId
      * @return array
      */
-    public function getEventByType($typeId, $typeLookupId)
+    public function getEventByTypeId($typeId, $typeLookupId)
     {
         $query = "
             SELECT `id`

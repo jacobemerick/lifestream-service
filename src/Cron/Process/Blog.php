@@ -5,6 +5,7 @@ namespace Jacobemerick\LifestreamService\Cron\Process;
 use Exception;
 
 use Interop\Container\ContainerInterface as Container;
+use Jacobemerick\LifestreamService\Cron\CronInterface;
 use Jacobemerick\LifestreamService\Model\Blog as BlogModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -14,6 +15,7 @@ class Blog implements CronInterface, LoggerAwareInterface
 {
 
     use LoggerAwareTrait;
+    use ProcessTrait;
 
     /** @var Container */
     protected $container;
@@ -65,16 +67,17 @@ class Blog implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $this->logger->debug("Added new blog post: {$post['id']}");
+            $this->logger->debug("Added blog event: {$post['id']}");
         }
     }
 
     /**
-     * @param BlogModel $model
+     * @param BlogModel $blogModel
      * @return array
      */
-    protected function fetchPosts(BlogModel $model)
+    protected function fetchPosts(BlogModel $blogModel)
     {
+        return $blogModel->getPosts();
     }
 
     /**
@@ -83,6 +86,11 @@ class Blog implements CronInterface, LoggerAwareInterface
      */
     protected function getDescription(array $post)
     {
+        return sprintf(
+            'Blogged about %s | %s.',
+            str_replace('-', ' ', $post['category']),
+            $post['title']
+        );
     }
 
     /**
@@ -91,5 +99,28 @@ class Blog implements CronInterface, LoggerAwareInterface
      */
     protected function getDescriptionHtml(array $post)
     {
+        $description = '';
+        if ($post['enclosure']) {
+            $description .= sprintf(
+                '<img src="%s" alt="Blog | %s" />',
+                $post['enclosure']['@attributes']['url'],
+                $post['title']
+            );
+        }
+
+        $description .= sprintf(
+            '<h4><a href="%s" title="Jacob Emerick\'s Blog | %s">%s</a></h4>',
+            $post['link'],
+            $post['title'],
+            $post['title']
+        );
+
+        $description .= sprintf(
+            '<p>%s [<a href="%s">read more</a></a>]</p>',
+            htmlentities($blogData['description']),
+            $blogData['link']
+        );
+
+        return $description;
     }
 }

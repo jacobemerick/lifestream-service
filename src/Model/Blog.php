@@ -38,6 +38,18 @@ class Blog
     }
 
     /**
+     * @return array
+     */
+    public function getPosts()
+    {
+        $query = "
+            SELECT `id`, `datetime`, `metadata`
+            FROM `blog`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+
+    /**
      * @param string $permalink
      * @param DateTime $datetime
      * @param string $metadata
