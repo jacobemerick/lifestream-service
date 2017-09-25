@@ -71,21 +71,23 @@ class Event
     }
 
     /**
+     * @param string $type
      * @param integer $typeId
-     * @param integer $typeLookupId
      * @return array
      */
-    public function getEventByTypeId($typeId, $typeLookupId)
+    public function getEventByTypeId($type, $typeId)
     {
         $query = "
-            SELECT `id`
+            SELECT `event`.`id`
             FROM `event`
-            WHERE `type_id` = :type_id AND
-                  `type_lookup_id` = :type_lookup_id";
+            INNER JOIN `type` ON
+                `type`.`id` = `event`.`type_id` AND
+                `type`.`name` = :type
+            WHERE `type_lookup_id` = :type_id";
 
         $bindings = [
+            'type' => $type,
             'type_id' => $typeId,
-            'type_lookup_id' => $typeLookupId,
         ];
 
         return $this->extendedPdo->fetchOne($query, $bindings);

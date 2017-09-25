@@ -2,7 +2,9 @@
 
 namespace Jacobemerick\LifestreamService\Cron\Process;
 
+use DateTime;
 use Exception;
+use stdclass;
 
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Cron\CronInterface;
@@ -45,16 +47,19 @@ class Blog implements CronInterface, LoggerAwareInterface
                 'blog',
                 $post['id']
             );
-            if ($event !== null) {
+
+            if ($event) {
                 continue;
             }
 
             try {
-                $description = $this->getDescription($post);
-                $descriptionHtml = $this->getDescriptionHtml($post);
+                $postMetadata = json_decode($post['metadata']);
+                $description = $this->getDescription($postMetadata);
+                $descriptionHtml = $this->getDescriptionHtml($postMetadata);
 
                 $this->insertEvent(
                     $this->container->get('eventModel'),
+                    $this->container->get('typeModel'),
                     $description,
                     $descriptionHtml,
                     (new DateTime($post['datetime'])),
@@ -81,44 +86,44 @@ class Blog implements CronInterface, LoggerAwareInterface
     }
 
     /**
-     * @param array $post
+     * @param stdclass $metadata
      * @return string
      */
-    protected function getDescription(array $post)
+    protected function getDescription(stdclass $metadata)
     {
         return sprintf(
             'Blogged about %s | %s.',
-            str_replace('-', ' ', $post['category']),
-            $post['title']
+            str_replace('-', ' ', $metadata->category),
+            $metadata->title
         );
     }
 
     /**
-     * @param array $post
+     * @param stdclass $metadata
      * @return string
      */
-    protected function getDescriptionHtml(array $post)
+    protected function getDescriptionHtml(stdclass $metadata)
     {
         $description = '';
-        if ($post['enclosure']) {
+        if (isset($metadata->enclosure)) {
             $description .= sprintf(
                 '<img src="%s" alt="Blog | %s" />',
-                $post['enclosure']['@attributes']['url'],
-                $post['title']
+                $metadata->enclosure->{'@attributes'}->url,
+                $metadata->title
             );
         }
 
         $description .= sprintf(
             '<h4><a href="%s" title="Jacob Emerick\'s Blog | %s">%s</a></h4>',
-            $post['link'],
-            $post['title'],
-            $post['title']
+            $metadata->link,
+            $metadata->title,
+            $metadata->title
         );
 
         $description .= sprintf(
             '<p>%s [<a href="%s">read more</a></a>]</p>',
-            htmlentities($blogData['description']),
-            $blogData['link']
+            htmlentities($metadata->description),
+            $metadata->link
         );
 
         return $description;

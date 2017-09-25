@@ -30,4 +30,23 @@ class Type
 
         return $this->extendedPdo->fetchAll($query);
     }
+
+    /**
+     * @param string $type
+     * @return integer
+     */
+    public function getTypeId($type)
+    {
+        $query = "
+            SELECT `id`
+            FROM `type`
+            WHERE `type`.`name` = :type
+            LIMIT 1";
+
+        $bindings = [
+            'type' => $type,
+        ];
+
+        return $this->extendedPdo->fetchValue($query, $bindings);
+    }
 }
