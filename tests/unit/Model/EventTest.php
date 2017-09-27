@@ -32,7 +32,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1";
         $bindings = [];
@@ -58,7 +58,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 LIMIT 0, {$limit}";
@@ -86,7 +86,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 LIMIT {$offset}, {$limit}";
@@ -113,7 +113,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1 AND
                 `type`.`name` = :type_name";
@@ -142,7 +142,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1 AND
                 `user`.`name` = :user_name";
@@ -171,7 +171,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 ORDER BY `{$order}` ASC";
@@ -199,7 +199,7 @@ class EventTest extends TestCase
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
                    `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
             FROM `event`
-            INNER JOIN `user` ON `user`.`id` = `event`.`user`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
             INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
             WHERE 1 = 1
                 ORDER BY `{$order}` DESC";
@@ -242,17 +242,19 @@ class EventTest extends TestCase
 
     public function testGetEventByTypeIdSendsParams()
     {
-        $typeId = 1;
-        $typeLookupId = 123;
+        $type = 'type';
+        $typeId = 123;
 
         $query = "
-            SELECT `id`
+            SELECT `event`.`id`
             FROM `event`
-            WHERE `type_id` = :type_id AND
-                  `type_lookup_id` = :type_lookup_id";
+            INNER JOIN `type` ON
+                `type`.`id` = `event`.`type_id` AND
+                `type`.`name` = :type
+            WHERE `type_lookup_id` = :type_id";
         $bindings = [
+            'type' => $type,
             'type_id' => $typeId,
-            'type_lookup_id' => $typeLookupId,
         ];
 
         $mockPdo = $this->createMock(ExtendedPdo::class);
@@ -264,7 +266,7 @@ class EventTest extends TestCase
             );
 
         $model = new Event($mockPdo);
-        $model->getEventByTypeId($typeId, $typeLookupId);
+        $model->getEventByTypeId($type, $typeId);
     }
 
     public function testGetEventByTypeIdReturnsEvent()
@@ -289,18 +291,23 @@ class EventTest extends TestCase
         $descriptionHtml = '<p>some description</p>';
         $datetime = new DateTime();
         $metadata = '{"key":"value"}';
+        $userId = 1;
         $typeId = 1;
         $typeLookupId = 123;
 
         $query = "
-            INSERT INTO `event` (`description`, `description_html`, `datetime`, `metadata`,
-                                 `type_id`, `type_lookup_id`)
-            VALUES (:description, :description_html, :datetime, :metadata, :type_id, :type_lookup_id)";
+            INSERT INTO `event`
+                (`description`, `description_html`, `datetime`, `metadata`, `user_id`,
+                 `type_id`, `type_lookup_id`)
+            VALUES
+                (:description, :description_html, :datetime, :metadata, :user_id,
+                 :type_id, :type_lookup_id)";
         $bindings = [
             'description' => $description,
             'description_html' => $descriptionHtml,
             'datetime' => $datetime->format('Y-m-d H:i:s'),
             'metadata' => $metadata,
+            'user_id' => $userId,
             'type_id' => $typeId,
             'type_lookup_id' => $typeLookupId,
         ];
@@ -314,7 +321,15 @@ class EventTest extends TestCase
             );
 
         $model = new Event($mockPdo);
-        $model->insertEvent($description, $descriptionHtml, $datetime, $metadata, $typeId, $typeLookupId);
+        $model->insertEvent(
+            $description,
+            $descriptionHtml,
+            $datetime,
+            $metadata,
+            $userId,
+            $typeId,
+            $typeLookupId
+        );
     }
 
     public function testInsertEventReturnsTrueIfSuccess()
@@ -324,7 +339,7 @@ class EventTest extends TestCase
             ->willReturn(1);
 
         $model = new Event($mockPdo);
-        $result = $model->insertEvent('', '', new DateTime(), '', null, null);
+        $result = $model->insertEvent('', '', new DateTime(), '', null, null, null);
 
         $this->assertTrue($result);
     }
@@ -336,7 +351,7 @@ class EventTest extends TestCase
             ->willReturn(0);
 
         $model = new Event($mockPdo);
-        $result = $model->insertEvent('', '', new DateTime(), '', null, null);
+        $result = $model->insertEvent('', '', new DateTime(), '', null, null, null);
 
         $this->assertFalse($result);
     }

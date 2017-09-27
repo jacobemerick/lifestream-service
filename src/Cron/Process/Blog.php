@@ -60,10 +60,12 @@ class Blog implements CronInterface, LoggerAwareInterface
                 $this->insertEvent(
                     $this->container->get('eventModel'),
                     $this->container->get('typeModel'),
+                    $this->container->get('userModel'),
                     $description,
                     $descriptionHtml,
                     (new DateTime($post['datetime'])),
                     [],
+                    'Jacob Emerick',
                     'blog',
                     $post['id']
                 );

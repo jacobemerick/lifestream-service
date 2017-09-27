@@ -98,7 +98,7 @@ CREATE TABLE `event` (
   `description_html` text NOT NULL,
   `datetime` datetime NOT NULL,
   `metadata` text NOT NULL,
-  `user` tinyint(4) NOT NULL,
+  `user_id` tinyint(4) NOT NULL,
   `type_id` tinyint(4) NOT NULL,
   `type_lookup_id` int(11) NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,

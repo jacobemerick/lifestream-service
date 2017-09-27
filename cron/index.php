@@ -52,6 +52,7 @@ $di->set('eventModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Event'
 $di->set('photoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Photo'));
 $di->set('twitterModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Twitter'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
+$di->set('userModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\User'));
 $di->set('videoModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Video'));
 
 // set up clients
