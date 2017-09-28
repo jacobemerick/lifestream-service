@@ -24,22 +24,6 @@ class TypeTest extends TestCase
         $this->assertAttributeSame($mockPdo, 'extendedPdo', $model);
     }
 
-    public function testGetTypesSendsParams()
-    {
-        $query = "
-            SELECT `id`, `name`
-            FROM `type`
-            ORDER BY `name` ASC";
-
-        $mockPdo = $this->createMock(ExtendedPdo::class);
-        $mockPdo->expects($this->once())
-            ->method('fetchAll')
-            ->with($this->equalTo($query));
-
-        $model = new Type($mockPdo);
-        $model->getTypes();
-    }
-
     public function testGetTypesReturnsList()
     {
         $types = [
@@ -53,13 +37,59 @@ class TypeTest extends TestCase
             ],
         ];
 
+        $query = "
+            SELECT `id`, `name`
+            FROM `type`
+            ORDER BY `name` ASC";
+
         $mockPdo = $this->createMock(ExtendedPdo::class);
-        $mockPdo->method('fetchAll')
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->equalTo($query))
             ->willReturn($types);
 
         $model = new Type($mockPdo);
         $result = $model->getTypes();
 
         $this->assertSame($types, $result);
+    }
+
+    public function testGetTypeIdSendsParams()
+    {
+        $type = 'some type';
+
+        $query = "
+            SELECT `id`
+            FROM `type`
+            WHERE `name` = :type
+            LIMIT 1";
+        $bindings = [
+            'type' => $type,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchValue')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Type($mockPdo);
+        $model->getTypeId($type);
+    }
+
+    public function testGetTypeIdReturnsId()
+    {
+        $typeId = 1;
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchValue')
+            ->willReturn($typeId);
+
+        $model = new Type($mockPdo);
+        $result = $model->getTypeId('');
+
+        $this->assertSame($typeId, $result);
     }
 }

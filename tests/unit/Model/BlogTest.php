@@ -68,6 +68,31 @@ class BlogTest extends TestCase
         $this->assertSame($post, $result);
     }
 
+    public function testGetPostsReturnsPosts()
+    {
+        $posts = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `datetime`, `metadata`
+            FROM `blog`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($posts);
+
+        $model = new Blog($mockPdo);
+        $result = $model->getPosts();
+
+        $this->assertSame($posts, $result);
+    }
+
     public function testInsertPostSendsParams()
     {
         $permalink = 'http://site.com/some-post';

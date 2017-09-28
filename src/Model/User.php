@@ -27,7 +27,7 @@ class User
         $query = "
             SELECT `id`
             FROM `user`
-            WHERE `user`.`name` = :user
+            WHERE `name` = :user
             LIMIT 1";
 
         $bindings = [

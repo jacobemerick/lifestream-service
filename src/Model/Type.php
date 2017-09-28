@@ -40,7 +40,7 @@ class Type
         $query = "
             SELECT `id`
             FROM `type`
-            WHERE `type`.`name` = :type
+            WHERE `name` = :type
             LIMIT 1";
 
         $bindings = [
