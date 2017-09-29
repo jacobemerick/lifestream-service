@@ -12,16 +12,13 @@ use Jacobemerick\LifestreamService\Model\User as UserModel;
 trait ProcessTrait
 {
 
-    /** @var Container */
-    protected $container;
-
     /**
      * @param EventModel $eventModel
      * @param string $type
      * @param integer $typeId
      * @return array
      */
-    public function getEvent(EventModel $eventModel, $type, $typeId)
+    protected function getEvent(EventModel $eventModel, $type, $typeId)
     {
         return $eventModel->getEventByTypeId($type, $typeId);
     }
@@ -39,7 +36,7 @@ trait ProcessTrait
      * @param integer $typeLookupId
      * @return boolean
      */
-    public function insertEvent(
+    protected function insertEvent(
         EventModel $eventModel,
         TypeModel $typeModel,
         UserModel $userModel,
