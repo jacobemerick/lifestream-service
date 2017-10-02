@@ -78,7 +78,7 @@ class Event
     public function getEventByTypeId($type, $typeId)
     {
         $query = "
-            SELECT `event`.`id`
+            SELECT `event`.`id`, `description`, `metadata`
             FROM `event`
             INNER JOIN `type` ON
                 `type`.`id` = `event`.`type_id` AND
