@@ -8,7 +8,7 @@ use stdclass;
 
 use Interop\Container\ContainerInterface as Container;
 use Jacobemerick\LifestreamService\Cron\CronInterface;
-use Jacobemerick\LifestreamService\Model\BlogComment as BlogCommentModel;
+use Jacobemerick\LifestreamService\Model\Blog as BlogModel;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;

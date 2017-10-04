@@ -153,36 +153,56 @@ use Jacobemerick\LifestreamService\Cron\Process;
 
 switch ($opts['s']) {
     case 'blog':
-        $cron = new Process\Blog($di);
+        $cronList = [
+            new Fetch\Blog($di),
+            new Process\Blog($di),
+        ];
         break;
     case 'blogComment':
-        $cron = new Fetch\BlogComment($di);
+        $cronList = [
+            new Fetch\BlogComment($di),
+            new Process\BlogComment($di),
+        ];
         break;
     case 'book':
-        $cron = new Fetch\Book($di);
+        $cronList = [
+            new Fetch\Book($di),
+        ];
         break;
     case 'code':
-        $cron = new Fetch\Code($di);
+        $cronList = [
+            new Fetch\Code($di),
+        ];
         break;
     case 'distance':
-        $cron = new Fetch\Distance($di);
+        $cronList = [
+            new Fetch\Distance($di),
+        ];
         break;
     case 'photo':
-        $cron = new Fetch\Photo($di);
+        $cronList = [
+            new Fetch\Photo($di),
+        ];
         break;
     case 'twitter':
-        $cron = new Fetch\Twitter($di);
+        $cronList = [
+            new Fetch\Twitter($di),
+        ];
         break;
     case 'video':
-        $cron = new Fetch\Video($di);
+        $cronList = [
+            new Fetch\Video($di),
+        ];
         break;
     default:
-        throw new Exception('Unrecognized cron passed in');
+        throw new Exception('Unrecognized cronList passed in');
         break;
 }
 
-$cron->setLogger($di->get('logger'));
-$cron->run();
+array_walk($cronList, function($cron) use ($di) {
+    $cron->setLogger($di->get('logger'));
+    $cron->run();
+});
 
 $di->get('logger')->addInfo('Runtime stats', [
     'time' => (microtime(true) - $startTime),
