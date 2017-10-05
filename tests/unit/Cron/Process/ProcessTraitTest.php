@@ -5,6 +5,7 @@ namespace Jacobemerick\LifestreamService\Cron\Process;
 use DateTime;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use stdclass;
 
 use Jacobemerick\LifestreamService\Model\Event as EventModel;
 use Jacobemerick\LifestreamService\Model\Type as TypeModel;
@@ -102,8 +103,8 @@ class ProcessTraitTest extends TestCase
             $userModel,
             '',
             '',
-            new DateTime(),
-            [],
+            new DateTime,
+            new stdclass,
             '',
             $type,
             null,
@@ -149,8 +150,8 @@ class ProcessTraitTest extends TestCase
             $userModel,
             '',
             '',
-            new DateTime(),
-            [],
+            new DateTime,
+            new stdclass,
             $user,
             '',
             null,
@@ -161,8 +162,8 @@ class ProcessTraitTest extends TestCase
     {
         $description = 'some description';
         $descriptionHtml = '<p>some description</p>';
-        $datetime = new DateTime();
-        $metadata = [ 'some metadata' ];
+        $datetime = new DateTime;
+        $metadata = (object) [ 'some metadata' ];
         $typeLookupId = 123;
 
         $eventModel = $this->createMock(EventModel::class);
@@ -222,8 +223,8 @@ class ProcessTraitTest extends TestCase
             $userModel,
             '',
             '',
-            new DateTime(),
-            [],
+            new DateTime,
+            new stdclass,
             '',
             '',
             null,

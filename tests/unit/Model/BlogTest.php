@@ -76,7 +76,7 @@ class BlogTest extends TestCase
         ];
 
         $query = "
-            SELECT `id`, `datetime`, `metadata`
+            SELECT `id`, `permalink`, `datetime`, `metadata`
             FROM `blog`";
 
         $mockPdo = $this->createMock(ExtendedPdo::class);

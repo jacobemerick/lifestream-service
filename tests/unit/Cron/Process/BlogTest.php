@@ -429,7 +429,9 @@ class BlogTest extends TestCase
                 $this->callback(function ($datetimeParam) use ($datetime) {
                     return $datetimeParam->format('Y-m-d H:i:s') === $datetime;
                 }),
-                $this->equalTo([]),
+                $this->callback(function ($metadata) {
+                    return $metadata == new stdclass;
+                }),
                 $this->equalTo('Jacob Emerick'),
                 $this->equalTo('blog'),
                 $this->equalTo($postId)
