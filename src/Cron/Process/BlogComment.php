@@ -50,7 +50,7 @@ class BlogComment implements CronInterface, LoggerAwareInterface
                 $post['id']
             );
 
-            if ($event) {
+            if (!$event) {
                 continue;
             }
 
@@ -68,7 +68,7 @@ class BlogComment implements CronInterface, LoggerAwareInterface
             }
 
             try {
-                $this->updateEvent(
+                $this->updateEventMetadata(
                     $this->container->get('eventModel'),
                     $event['id'],
                     $newMetadata
@@ -97,6 +97,9 @@ class BlogComment implements CronInterface, LoggerAwareInterface
      */
     protected function collectComments(array $post)
     {
+        $blogCommentModel = $this->container->get('blogCommentModel');
+        $commentCount = $blogCommentModel->getCommentCountByPage($post['permalink']);
+        $post['comments'] = $commentCount;
         return $post;
     }
 }

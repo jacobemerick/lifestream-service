@@ -43,7 +43,7 @@ class Blog
     public function getPosts()
     {
         $query = "
-            SELECT `id`, `datetime`, `metadata`
+            SELECT `id`, `permalink`, `datetime`, `metadata`
             FROM `blog`";
 
         return $this->extendedPdo->fetchAll($query);

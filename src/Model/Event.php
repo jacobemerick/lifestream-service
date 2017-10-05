@@ -133,4 +133,25 @@ class Event
         $insertEventCount = $this->extendedPdo->fetchAffected($query, $bindings);
         return $insertEventCount === 1;
     }
+
+    /**
+     * @param integer $id
+     * @param string $metadata
+     * @return boolean
+     */
+    public function updateEventMetadata($id, $metadata) {
+        $query = "
+            UPDATE `event`
+            SET `metadata` = :metadata
+            WHERE `id` = :id
+            LIMIT 1";
+
+        $bindings = [
+            'metadata' => $metadata,
+            'id' => $id,
+        ];
+
+        $updatedEventCount = $this->extendedPdo->fetchAffected($query, $bindings);
+        return $updatedEventCount === 1;
+    }
 }

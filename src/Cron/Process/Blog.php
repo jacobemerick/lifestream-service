@@ -64,7 +64,7 @@ class Blog implements CronInterface, LoggerAwareInterface
                     $description,
                     $descriptionHtml,
                     (new DateTime($post['datetime'])),
-                    [],
+                    (object) [],
                     'Jacob Emerick',
                     'blog',
                     $post['id']

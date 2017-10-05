@@ -39,6 +39,24 @@ class BlogComment
 
     /**
      * @param string $permalink
+     * @return array
+     */
+    public function getCommentCountByPage($permalink)
+    {
+        $query = "
+            SELECT COUNT(1)
+            FROM `blog_comment`
+            WHERE `permalink` LIKE :permalink";
+
+        $bindings = [
+            'permalink' => "{$permalink}%",
+        ];
+
+        return $this->extendedPdo->fetchValue($query, $bindings);
+    }
+
+    /**
+     * @param string $permalink
      * @param DateTime $datetime
      * @param string $metadata
      * @return boolean

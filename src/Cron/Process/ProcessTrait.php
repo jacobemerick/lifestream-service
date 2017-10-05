@@ -4,6 +4,7 @@ namespace Jacobemerick\LifestreamService\Cron\Process;
 
 use DateTime;
 use Exception;
+use stdclass;
 
 use Jacobemerick\LifestreamService\Model\Event as EventModel;
 use Jacobemerick\LifestreamService\Model\Type as TypeModel;
@@ -16,7 +17,7 @@ trait ProcessTrait
      * @param EventModel $eventModel
      * @param string $type
      * @param integer $typeId
-     * @return array
+     * @return stdclass
      */
     protected function getEvent(EventModel $eventModel, $type, $typeId)
     {
@@ -30,7 +31,7 @@ trait ProcessTrait
      * @param string $description
      * @param string $descriptionHtml
      * @param DateTime $datetime
-     * @param array metadata
+     * @param stdclass $metadata
      * @param string $user
      * @param string $type
      * @param integer $typeLookupId
@@ -43,7 +44,7 @@ trait ProcessTrait
         $description,
         $descriptionHtml,
         DateTime $datetime,
-        array $metadata,
+        stdclass $metadata,
         $user,
         $type,
         $typeLookupId
@@ -60,5 +61,16 @@ trait ProcessTrait
             $typeId,
             $typeLookupId
         );
+    }
+
+    /**
+     * @param EventModel $eventModel
+     * @param integer $id
+     * @param stdclass $metadata
+     * @return boolean
+     */
+    protected function updateEventMetadata(EventModel $eventModel, $id, stdclass $metadata)
+    {
+        return $eventModel->updateEventMetadata($id, json_encode($metadata));
     }
 }
