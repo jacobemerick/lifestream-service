@@ -68,6 +68,44 @@ class BlogCommentTest extends TestCase
         $this->assertSame($post, $result);
     }
 
+    public function testGetCommentCountByPageSendsParams()
+    {
+        $permalink = 'http://site.com/some-post';
+
+        $query = "
+            SELECT COUNT(1)
+            FROM `blog_comment`
+            WHERE `permalink` LIKE :permalink";
+        $bindings = [
+            'permalink' => "{$permalink}%",
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchValue')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new BlogComment($mockPdo);
+        $model->getCommentCountByPage($permalink);
+    }
+
+    public function testGetCommentCountByPageReturnsCount()
+    {
+        $count = 3;
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchValue')
+            ->willReturn($count);
+
+        $model = new BlogComment($mockPdo);
+        $result = $model->getCommentCountByPage('');
+
+        $this->assertSame($count, $result);
+    }
+
     public function testInsertCommentSendsParams()
     {
         $permalink = 'http://site.com/some-post#comment-123';

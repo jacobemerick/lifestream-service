@@ -232,4 +232,51 @@ class ProcessTraitTest extends TestCase
 
         $this->assertSame($modelResult, $result);
     }
+
+    public function testUpdateEventMetadataSendsParams()
+    {
+        $id = 123;
+        $metadata = (object) [ 'some metadata' ];
+
+        $eventModel = $this->createMock(EventModel::class);
+        $eventModel->expects($this->once())
+            ->method('updateEventMetadata')
+            ->with(
+                $this->equalTo($id),
+                $this->equalTo(json_encode($metadata))
+            );
+
+        $processTrait = $this->getMockForTrait(ProcessTrait::class);
+        $reflectedTrait = new ReflectionClass($processTrait);
+        $reflectedUpdateEventMetadata = $reflectedTrait->getMethod('updateEventMetadata');
+        $reflectedUpdateEventMetadata->setAccessible(true);
+
+        $reflectedUpdateEventMetadata->invokeArgs($processTrait, [
+            $eventModel,
+            $id,
+            $metadata,
+        ]);
+    }
+
+    public function testUpdateEventMetadataReturnsModelResult()
+    {
+        $modelResult = true;
+
+        $eventModel = $this->createMock(EventModel::class);
+        $eventModel->method('updateEventMetadata')
+            ->willReturn($modelResult);
+
+        $processTrait = $this->getMockForTrait(ProcessTrait::class);
+        $reflectedTrait = new ReflectionClass($processTrait);
+        $reflectedUpdateEventMetadata = $reflectedTrait->getMethod('updateEventMetadata');
+        $reflectedUpdateEventMetadata->setAccessible(true);
+
+        $result = $reflectedUpdateEventMetadata->invokeArgs($processTrait, [
+            $eventModel,
+            null,
+            new stdclass,
+        ]);
+
+        $this->assertSame($modelResult, $result);
+    }
 }

@@ -355,4 +355,58 @@ class EventTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    public function testUpdateEventMetadataSendsParams()
+    {
+        $id = 123;
+        $metadata = '{"key":"value"}';
+
+        $query = "
+            UPDATE `event`
+            SET `metadata` = :metadata
+            WHERE `id` = :id
+            LIMIT 1";
+        $bindings = [
+            'id' => $id,
+            'metadata' => $metadata,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAffected')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Event($mockPdo);
+        $model->updateEventMetadata(
+            $id,
+            $metadata
+        );
+    }
+
+    public function testUpdateEventMetadataReturnsTrueIfSuccess()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(1);
+
+        $model = new Event($mockPdo);
+        $result = $model->updateEventMetadata(null, '');
+
+        $this->assertTrue($result);
+    }
+
+    public function testUpdateEventMetadataReturnsFalseIfFailure()
+    {
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchAffected')
+            ->willReturn(0);
+
+        $model = new Event($mockPdo);
+        $result = $model->updateEventMetadata(null, '');
+
+        $this->assertFalse($result);
+    }
 }
