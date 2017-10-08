@@ -638,10 +638,10 @@ class BlogTest extends TestCase
 
         $reflectedBlog = new ReflectionClass(Blog::class);
 
-        $reflectedFetchPostsMethod = $reflectedBlog->getMethod('getDescription');
-        $reflectedFetchPostsMethod->setAccessible(true);
+        $reflectedGetDescriptionMethod = $reflectedBlog->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
 
-        $result = $reflectedFetchPostsMethod->invokeArgs($blog, [
+        $result = $reflectedGetDescriptionMethod->invokeArgs($blog, [
             $metadata,
         ]);
 
@@ -673,10 +673,10 @@ class BlogTest extends TestCase
 
         $reflectedBlog = new ReflectionClass(Blog::class);
 
-        $reflectedFetchPostsMethod = $reflectedBlog->getMethod('getDescriptionHtml');
-        $reflectedFetchPostsMethod->setAccessible(true);
+        $reflectedGetDescriptionHtmlMethod = $reflectedBlog->getMethod('getDescriptionHtml');
+        $reflectedGetDescriptionHtmlMethod->setAccessible(true);
 
-        $result = $reflectedFetchPostsMethod->invokeArgs($blog, [
+        $result = $reflectedGetDescriptionHtmlMethod->invokeArgs($blog, [
             $metadata,
         ]);
 
@@ -702,10 +702,10 @@ class BlogTest extends TestCase
 
         $reflectedBlog = new ReflectionClass(Blog::class);
 
-        $reflectedFetchPostsMethod = $reflectedBlog->getMethod('getDescriptionHtml');
-        $reflectedFetchPostsMethod->setAccessible(true);
+        $reflectedGetDescriptionHtmlMethod = $reflectedBlog->getMethod('getDescriptionHtml');
+        $reflectedGetDescriptionHtmlMethod->setAccessible(true);
 
-        $result = $reflectedFetchPostsMethod->invokeArgs($blog, [
+        $result = $reflectedGetDescriptionHtmlMethod->invokeArgs($blog, [
             $metadata,
         ]);
 
