@@ -166,7 +166,8 @@ switch ($opts['s']) {
         break;
     case 'book':
         $cronList = [
-            new Fetch\Book($di),
+            // new Fetch\Book($di),
+            new Process\Book($di),
         ];
         break;
     case 'code':

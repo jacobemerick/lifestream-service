@@ -38,6 +38,18 @@ class Book
     }
 
     /**
+     * @return array
+     */
+    public function getBooks()
+    {
+        $query = "
+            SELECT `id`, `permalink`, `datetime`, `metadata`
+            FROM `book`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+
+    /**
      * @param string $bookId
      * @param string $permalink
      * @param DateTime $datetime
