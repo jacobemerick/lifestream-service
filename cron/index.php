@@ -156,23 +156,20 @@ switch ($opts['s']) {
         $cronList = [
             new Fetch\Blog($di),
             new Process\Blog($di),
-        ];
-        break;
-    case 'blogComment':
-        $cronList = [
             new Fetch\BlogComment($di),
             new Process\BlogComment($di),
         ];
         break;
     case 'book':
         $cronList = [
-            // new Fetch\Book($di),
+            new Fetch\Book($di),
             new Process\Book($di),
         ];
         break;
     case 'code':
         $cronList = [
-            new Fetch\Code($di),
+            // new Fetch\Code($di),
+            new Process\Code($di),
         ];
         break;
     case 'distance':
