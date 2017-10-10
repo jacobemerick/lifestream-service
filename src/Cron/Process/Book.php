@@ -94,7 +94,7 @@ class Book implements CronInterface, LoggerAwareInterface
     protected function getDescription(stdclass $metadata)
     {
         return sprintf(
-            'Read %s by %s',
+            'Read %s by %s.',
             $metadata->title,
             $metadata->author_name
         );
@@ -116,7 +116,7 @@ class Book implements CronInterface, LoggerAwareInterface
         }
 
         $description .= sprintf(
-            '<p>Read %s by %s</p>',
+            '<p>Read %s by %s.</p>',
             $metadata->title,
             $metadata->author_name
         );

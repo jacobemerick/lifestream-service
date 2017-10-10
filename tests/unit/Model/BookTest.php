@@ -68,6 +68,31 @@ class BookTest extends TestCase
         $this->assertSame($book, $result);
     }
 
+    public function testGetBooksReturnsBooks()
+    {
+        $books = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `permalink`, `datetime`, `metadata`
+            FROM `book`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($books);
+
+        $model = new Book($mockPdo);
+        $result = $model->getBooks();
+
+        $this->assertSame($books, $result);
+    }
+
     public function testInsertBookSendsParams()
     {
         $bookId = '123';
