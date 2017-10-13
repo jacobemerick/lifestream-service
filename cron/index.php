@@ -197,7 +197,7 @@ switch ($opts['s']) {
         break;
 }
 
-array_walk($cronList, function($cron) use ($di) {
+array_walk($cronList, function ($cron) use ($di) {
     $cron->setLogger($di->get('logger'));
     $cron->run();
 });

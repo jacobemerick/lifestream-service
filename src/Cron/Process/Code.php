@@ -102,32 +102,32 @@ class Code implements CronInterface, LoggerAwareInterface
         switch ($type) {
             case 'CreateEvent':
                 if (
-                    $eventMetadata->payload->ref_type == 'branch' ||
-                    $eventMetadata->payload->ref_type == 'tag'
+                    $metadata->payload->ref_type == 'branch' ||
+                    $metadata->payload->ref_type == 'tag'
                 ) {
-                    $description = $this->getCreateDescription($eventMetadata);
-                    $descriptionHtml = $this->getCreateDescriptionHtml($eventMetadata);
-                } else if ($eventMetadata->payload->ref_type == 'repository') {
-                    $description = $this->getCreateRepositoryDescription($eventMetadata);
-                    $descriptionHtml = $this->getCreateRepositoryDescription($eventMetadata);
+                    $description = $this->getCreateDescription($metadata);
+                    $descriptionHtml = $this->getCreateDescriptionHtml($metadata);
+                } else if ($metadata->payload->ref_type == 'repository') {
+                    $description = $this->getCreateRepositoryDescription($metadata);
+                    $descriptionHtml = $this->getCreateRepositoryDescription($metadata);
                 } else {
-                    throw new Exception("Skipping create event: {$eventMetadata->payload->ref_type}");
+                    throw new Exception("Skipping create event: {$metadata->payload->ref_type}");
                 }
                 break;
             case 'ForkEvent':
-                $description = $this->getForkDescription($eventMetadata);
-                $descriptionHtml = $this->getForkDescriptionHtml($eventMetadata);
+                $description = $this->getForkDescription($metadata);
+                $descriptionHtml = $this->getForkDescriptionHtml($metadata);
                 break;
             case 'PullRequestEvent':
-                $description = $this->getPullRequestDescription($eventMetadata);
-                $descriptionHtml = $this->getPullRequestDescriptionHtml($eventMetadata);
+                $description = $this->getPullRequestDescription($metadata);
+                $descriptionHtml = $this->getPullRequestDescriptionHtml($metadata);
                 break;
             case 'PushEvent':
-                $description = $this->getPushDescription($eventMetadata);
-                $descriptionHtml = $this->getPushDescriptionHtml($eventMetadata);
+                $description = $this->getPushDescription($metadata);
+                $descriptionHtml = $this->getPushDescriptionHtml($metadata);
                 break;
             default:
-                throw new Exception("Skipping an event type: {$event['type']}");
+                throw new Exception("Skipping an event type: {$type}");
                 break;
         }
 
