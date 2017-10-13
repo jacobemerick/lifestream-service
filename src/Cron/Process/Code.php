@@ -52,11 +52,16 @@ class Code implements CronInterface, LoggerAwareInterface
                 continue;
             }
 
-            try {
-                $eventMetadata = json_decode($event['metadata']);
-                $description = $this->getDescription($eventMetadata);
-                $descriptionHtml = $this->getDescriptionHtml($eventMetadata);
+            $eventMetadata = json_decode($event['metadata']);
 
+            try {
+                [ $description, $descriptionHtml ] = $this->getDescriptions($event['type'], $eventMetadata);
+            } catch (Exception $exception) {
+                $this->logger->debug($exception->getMessage());
+                continue;
+            }
+
+            try {
                 $this->insertEvent(
                     $this->container->get('eventModel'),
                     $this->container->get('typeModel'),
@@ -88,10 +93,52 @@ class Code implements CronInterface, LoggerAwareInterface
     }
 
     /**
+     * @param string $type
+     * @param stdclass $metadata
+     * @return array
+     */
+    protected function getDescriptions($type, stdclass $metadata)
+    {
+        switch ($type) {
+            case 'CreateEvent':
+                if (
+                    $eventMetadata->payload->ref_type == 'branch' ||
+                    $eventMetadata->payload->ref_type == 'tag'
+                ) {
+                    $description = $this->getCreateDescription($eventMetadata);
+                    $descriptionHtml = $this->getCreateDescriptionHtml($eventMetadata);
+                } else if ($eventMetadata->payload->ref_type == 'repository') {
+                    $description = $this->getCreateRepositoryDescription($eventMetadata);
+                    $descriptionHtml = $this->getCreateRepositoryDescription($eventMetadata);
+                } else {
+                    throw new Exception("Skipping create event: {$eventMetadata->payload->ref_type}");
+                }
+                break;
+            case 'ForkEvent':
+                $description = $this->getForkDescription($eventMetadata);
+                $descriptionHtml = $this->getForkDescriptionHtml($eventMetadata);
+                break;
+            case 'PullRequestEvent':
+                $description = $this->getPullRequestDescription($eventMetadata);
+                $descriptionHtml = $this->getPullRequestDescriptionHtml($eventMetadata);
+                break;
+            case 'PushEvent':
+                $description = $this->getPushDescription($eventMetadata);
+                $descriptionHtml = $this->getPushDescriptionHtml($eventMetadata);
+                break;
+            default:
+                throw new Exception("Skipping an event type: {$event['type']}");
+                break;
+        }
+
+        return [ $description, $descriptionHtml];
+    }
+
+    /**
      * @param stdclass $metadata
      * @return string
      */
-    protected function getDescription(stdclass $metadata)
+    protected function getCreateDescription(stdclass $metadata)
     {
         return 'wrote some code';
     }
@@ -100,7 +147,79 @@ class Code implements CronInterface, LoggerAwareInterface
      * @param stdclass $metadata
      * @return string
      */
-    protected function getDescriptionHtml(stdclass $metadata)
+    protected function getCreateDescriptionHtml(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getCreateRepositoryDescription(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getCreateRepositoryDescriptionHtml(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getForkDescription(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getForkDescriptionHtml(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getPullRequestDescription(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getPullRequestDescriptionHtml(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getPushDescription(stdclass $metadata)
+    {
+        return 'wrote some code';
+    }
+
+    /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getPushDescriptionHtml(stdclass $metadata)
     {
         return 'wrote some code';
     }
