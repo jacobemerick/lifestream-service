@@ -38,6 +38,18 @@ class Code
     }
 
     /**
+     * @return array
+     */
+    public function getEvents()
+    {
+        $query = "
+            SELECT `id`, `event_id`, `type`, `datetime`, `metadata`
+            FROM `code`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+ 
+    /**
      * @param string $eventId
      * @param string $type
      * @param DateTime $datetime

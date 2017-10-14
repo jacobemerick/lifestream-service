@@ -35,27 +35,30 @@ class Code implements CronInterface, LoggerAwareInterface
     public function run()
     {
         try {
-            $events = $this->fetchEvents($this->container->get('codeModel'));
+            $codeEvents = $this->fetchCodeEvents($this->container->get('codeModel'));
         } catch (Exception $exception) {
             $this->logger->error($exception->getMessage());
             return;
         }
 
-        foreach ($events as $event) {
+        foreach ($codeEvents as $codeEvent) {
             $event = $this->getEvent(
                 $this->container->get('eventModel'),
                 'code',
-                $event['id']
+                $codeEvent['id']
             );
 
             if ($event) {
                 continue;
             }
 
-            $eventMetadata = json_decode($event['metadata']);
+            $codeEventMetadata = json_decode($codeEvent['metadata']);
 
             try {
-                [ $description, $descriptionHtml ] = $this->getDescriptions($event['type'], $eventMetadata);
+                [ $description, $descriptionHtml ] = $this->getDescriptions(
+                    $codeEvent['type'],
+                    $codeEventMetadata
+                );
             } catch (Exception $exception) {
                 $this->logger->debug($exception->getMessage());
                 continue;
@@ -68,18 +71,18 @@ class Code implements CronInterface, LoggerAwareInterface
                     $this->container->get('userModel'),
                     $description,
                     $descriptionHtml,
-                    (new DateTime($event['datetime'])),
+                    (new DateTime($codeEvent['datetime'])),
                     (object) [],
                     'Jacob Emerick',
                     'code',
-                    $event['id']
+                    $codeEvent['id']
                 );
             } catch (Exception $exception) {
                 $this->logger->error($exception->getMessage());
                 return;
             }
 
-            $this->logger->debug("Added code event: {$event['id']}");
+            $this->logger->debug("Added code codeEvent: {$codeEvent['id']}");
         }
     }
 
@@ -87,7 +90,7 @@ class Code implements CronInterface, LoggerAwareInterface
      * @param CodeModel $codeModel
      * @return array
      */
-    protected function fetchEvents(CodeModel $codeModel)
+    protected function fetchCodeEvents(CodeModel $codeModel)
     {
         return $codeModel->getEvents();
     }
@@ -140,7 +143,12 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateDescription(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            'Created %s %s at %s.',
+            $metadata->payload->ref_type,
+            $metadata->payload->ref,
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -149,7 +157,14 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateDescriptionHtml(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            '<p>Created %s %s at <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
+            $metadata->payload->ref_type,
+            $metadata->payload->ref,
+            "https://github.com/{$metadata->repo->name}",
+            $metadata->repo->name,
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -158,7 +173,11 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateRepositoryDescription(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            'Created %s %s.',
+            $metadata->payload->ref_type,
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -167,7 +186,13 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateRepositoryDescriptionHtml(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            '<p>Created %s <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
+            $metadata->payload->ref_type,
+            "https://github.com/{$metadata->repo->name}",
+            $metadata->repo->name,
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -176,7 +201,11 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getForkDescription(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            'Forked %s to %s',
+            $metadata->repo->name,
+            $metadata->payload->forkee->full_name
+        );
     }
 
     /**
@@ -185,7 +214,20 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getForkDescriptionHtml(stdclass $metadata)
     {
-        return 'wrote some code';
+        $description = '';
+        $description .= sprintf(
+            '<p>Forked <a href="%s" target="_blank" title="Github | %s">%s</a> ',
+            "https://github.com/{$metadata->repo->name}",
+            $metadata->repo->name,
+            $metadata->repo->name
+        );
+        $description .= sprintf(
+            'to <a href="%s" target="_blank" title="Github | %s">%s</a>.',
+            $metadata->payload->forkee->html_url,
+            $metadata->payload->forkee->full_name,
+            $metadata->payload->forkee->full_name
+        );
+        return $description;
     }
 
     /**
@@ -194,7 +236,11 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getPullRequestDescription(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            '%s a pull request at %s',
+            ucwords($metadata->payload->action),
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -203,7 +249,21 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getPullRequestDescriptionHtml(stdclass $metadata)
     {
-        return 'wrote some code';
+        $description = '';
+        $description .= sprintf(
+            '<p>%s pull request <a href="%s" target="_blank" title="Github | %s PR %d">%d</a> ',
+            ucwords($metadata->payload->action),
+            $metadata->payload->pull_request->html_url,
+            $metadata->repo->name,
+            $metadata->payload->number,
+            $metadata->payload->number);
+        $description .= sprintf(
+            'at <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
+            "https://github.com/{$metadata->repo->name}",
+            $metadata->repo->name,
+            $metadata->repo->name
+        );
+        return $description;
     }
 
     /**
@@ -212,7 +272,10 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getPushDescription(stdclass $metadata)
     {
-        return 'wrote some code';
+        return sprintf(
+            'Pushed some code at %s.',
+            $metadata->repo->name
+        );
     }
 
     /**
@@ -221,6 +284,31 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getPushDescriptionHtml(stdclass $metadata)
     {
-        return 'wrote some code';
+        $description = '';
+        $description .= sprintf(
+            "<p>Pushed some code at <a href=\"%s\" target=\"_blank\" title=\"Github | %s\">%s</a>.</p>",
+            $metadata->payload->ref,
+            "https://github.com/{$metadata->repo->name}",
+            $metadata->repo->name,
+            $metadata->repo->name
+        );
+        $description .= '<ul>';
+        foreach ($metadata->payload->commits as $commit) {
+            $commitMessage = $commit->message;
+            $commitMessage = strtok($commitMessage, "\n");
+            if (strlen($commitMessage) > 72) {
+                $commitMessage = wordwrap($commitMessage, 65);
+                $commitMessage .= '&hellip;';
+            }
+            $description .= sprintf(
+                "<li><a href=\"%s\" target=\"_blank\" title=\"Github | %s\">%s</a> %s.</li>",
+                "https://github.com/{$metadata->repo->name}/commit/{$commit->sha}",
+                substr($commit->sha, 0, 7),
+                substr($commit->sha, 0, 7),
+                $commitMessage
+            );
+        }
+        $description .= '</ul>';
+        return $description;
     }
 }
