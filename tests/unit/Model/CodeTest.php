@@ -68,6 +68,31 @@ class CodeTest extends TestCase
         $this->assertSame($event, $result);
     }
 
+    public function testGetEventsReturnsEvents()
+    {
+        $events = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `event_id`, `type`, `datetime`, `metadata`
+            FROM `code`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($events);
+
+        $model = new Code($mockPdo);
+        $result = $model->getEvents();
+
+        $this->assertSame($events, $result);
+    }
+
     public function testInsertEventSendsParams()
     {
         $eventId = '123';
