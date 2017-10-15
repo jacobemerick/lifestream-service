@@ -110,7 +110,7 @@ class Code implements CronInterface, LoggerAwareInterface
                 ) {
                     $description = $this->getCreateDescription($metadata);
                     $descriptionHtml = $this->getCreateDescriptionHtml($metadata);
-                } else if ($metadata->payload->ref_type == 'repository') {
+                } elseif ($metadata->payload->ref_type == 'repository') {
                     $description = $this->getCreateRepositoryDescription($metadata);
                     $descriptionHtml = $this->getCreateRepositoryDescription($metadata);
                 } else {
@@ -256,7 +256,8 @@ class Code implements CronInterface, LoggerAwareInterface
             $metadata->payload->pull_request->html_url,
             $metadata->repo->name,
             $metadata->payload->number,
-            $metadata->payload->number);
+            $metadata->payload->number
+        );
         $description .= sprintf(
             'at <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
             "https://github.com/{$metadata->repo->name}",

@@ -139,7 +139,8 @@ class Event
      * @param string $metadata
      * @return boolean
      */
-    public function updateEventMetadata($id, $metadata) {
+    public function updateEventMetadata($id, $metadata)
+    {
         $query = "
             UPDATE `event`
             SET `metadata` = :metadata
