@@ -82,7 +82,7 @@ class Code implements CronInterface, LoggerAwareInterface
                 return;
             }
 
-            $this->logger->debug("Added code codeEvent: {$codeEvent['id']}");
+            $this->logger->debug("Added code event: {$codeEvent['id']}");
         }
     }
 
