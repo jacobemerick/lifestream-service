@@ -104,18 +104,8 @@ class Code implements CronInterface, LoggerAwareInterface
     {
         switch ($type) {
             case 'CreateEvent':
-                if (
-                    $metadata->payload->ref_type == 'branch' ||
-                    $metadata->payload->ref_type == 'tag'
-                ) {
-                    $description = $this->getCreateDescription($metadata);
-                    $descriptionHtml = $this->getCreateDescriptionHtml($metadata);
-                } elseif ($metadata->payload->ref_type == 'repository') {
-                    $description = $this->getCreateRepositoryDescription($metadata);
-                    $descriptionHtml = $this->getCreateRepositoryDescription($metadata);
-                } else {
-                    throw new Exception("Skipping create event: {$metadata->payload->ref_type}");
-                }
+                $description = $this->getCreateDescription($metadata);
+                $descriptionHtml = $this->getCreateDescriptionHtml($metadata);
                 break;
             case 'ForkEvent':
                 $description = $this->getForkDescription($metadata);
@@ -134,7 +124,7 @@ class Code implements CronInterface, LoggerAwareInterface
                 break;
         }
 
-        return [ $description, $descriptionHtml];
+        return [ $description, $descriptionHtml ];
     }
 
     /**
@@ -143,12 +133,24 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateDescription(stdclass $metadata)
     {
-        return sprintf(
-            'Created %s %s at %s.',
-            $metadata->payload->ref_type,
-            $metadata->payload->ref,
-            $metadata->repo->name
-        );
+        if (in_array($metadata->payload->ref_type, [ 'branch', 'tag' ])) {
+            return sprintf(
+                'Created %s %s at %s.',
+                $metadata->payload->ref_type,
+                $metadata->payload->ref,
+                $metadata->repo->name
+            );
+        }
+
+        if (in_array($metadata->payload->ref_type, [ 'repository' ])) {
+            return sprintf(
+                'Created %s %s.',
+                $metadata->payload->ref_type,
+                $metadata->repo->name
+            );
+        }
+
+        throw new Exception("Skipping create event: {$metadata->payload->ref_type}");
     }
 
     /**
@@ -157,42 +159,28 @@ class Code implements CronInterface, LoggerAwareInterface
      */
     protected function getCreateDescriptionHtml(stdclass $metadata)
     {
-        return sprintf(
-            '<p>Created %s %s at <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
-            $metadata->payload->ref_type,
-            $metadata->payload->ref,
-            "https://github.com/{$metadata->repo->name}",
-            $metadata->repo->name,
-            $metadata->repo->name
-        );
-    }
+        if (in_array($metadata->payload->ref_type, [ 'branch', 'tag' ])) {
+            return sprintf(
+                '<p>Created %s %s at <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
+                $metadata->payload->ref_type,
+                $metadata->payload->ref,
+                "https://github.com/{$metadata->repo->name}",
+                $metadata->repo->name,
+                $metadata->repo->name
+            );
+        }
 
-    /**
-     * @param stdclass $metadata
-     * @return string
-     */
-    protected function getCreateRepositoryDescription(stdclass $metadata)
-    {
-        return sprintf(
-            'Created %s %s.',
-            $metadata->payload->ref_type,
-            $metadata->repo->name
-        );
-    }
+        if (in_array($metadata->payload->ref_type, [ 'repository' ])) {
+            return sprintf(
+                '<p>Created %s <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
+                $metadata->payload->ref_type,
+                "https://github.com/{$metadata->repo->name}",
+                $metadata->repo->name,
+                $metadata->repo->name
+            );
+        }
 
-    /**
-     * @param stdclass $metadata
-     * @return string
-     */
-    protected function getCreateRepositoryDescriptionHtml(stdclass $metadata)
-    {
-        return sprintf(
-            '<p>Created %s <a href="%s" target="_blank" title="Github | %s">%s</a>.</p>',
-            $metadata->payload->ref_type,
-            "https://github.com/{$metadata->repo->name}",
-            $metadata->repo->name,
-            $metadata->repo->name
-        );
+        throw new Exception("Skipping create event: {$metadata->payload->ref_type}");
     }
 
     /**

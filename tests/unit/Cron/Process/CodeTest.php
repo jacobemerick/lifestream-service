@@ -299,6 +299,72 @@ class CodeTest extends TestCase
         $code->run();
     }
 
+    public function testRunLogsThrownExceptionFromGetDescriptions()
+    {
+        $mockExceptionMessage = 'Failed to get descriptions';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $events = [
+            [
+                'id' => 1,
+                'metadata' => '{}',
+                'type' => '',
+                'datetime' => '',
+            ],
+        ];
+
+        $mockCodeModel = $this->createMock(CodeModel::class);
+        $mockEventModel = $this->createMock(EventModel::class);
+        $mockTypeModel = $this->createMock(TypeModel::class);
+        $mockUserModel = $this->createMock(UserModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'codeModel', $mockCodeModel ],
+                [ 'eventModel', $mockEventModel ],
+                [ 'typeModel', $mockTypeModel ],
+                [ 'userModel', $mockUserModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with($this->equalTo($mockExceptionMessage));
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'fetchCodeEvents',
+                'getDescriptions',
+                'getEvent',
+                'insertEvent',
+            ])
+            ->getMock();
+        $code->method('fetchCodeEvents')
+            ->willReturn($events);
+        $code->method('getDescriptions')
+            ->will($this->throwException($mockException));
+        $code->method('getEvent')
+            ->willReturn(false);
+        $code->expects($this->never())
+            ->method('insertEvent');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedContainerProperty = $reflectedCode->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($code, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedCode->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($code, $mockLogger);
+
+        $code->run();
+    }
+
     public function testRunPassesParamsToInsertEvent()
     {
         $description = 'some description';
@@ -550,11 +616,11 @@ class CodeTest extends TestCase
         $this->assertEquals($events, $result);
     }
 
-    public function testGetCreateDescriptionFormatsDescription()
+    public function testGetCreateDescriptionFormatsDescriptionForBranch()
     {
         $metadata = (object) [
             'payload' => (object) [
-                'ref_type' => 'some type',
+                'ref_type' => 'branch',
                 'ref' => 'some ref',
             ],
             'repo' => (object) [
@@ -562,7 +628,7 @@ class CodeTest extends TestCase
             ],
         ];
 
-        $expectedDescription = 'Created some type some ref at some name.';
+        $expectedDescription = 'Created branch some ref at some name.';
 
         $code = $this->getMockBuilder(Code::class)
             ->disableOriginalConstructor()
@@ -581,11 +647,99 @@ class CodeTest extends TestCase
         $this->assertEquals($expectedDescription, $result);
     }
 
-    public function testGetCreateDescriptionHtmlFormatsCreateDescription()
+    public function testGetCreateDescriptionFormatsDescriptionForTag()
     {
         $metadata = (object) [
             'payload' => (object) [
-                'ref_type' => 'some type',
+                'ref_type' => 'tag',
+                'ref' => 'some ref',
+            ],
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+        ];
+
+        $expectedDescription = 'Created tag some ref at some name.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionMethod = $reflectedCode->getMethod('getCreateDescription');
+        $reflectedGetCreateDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetCreateDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetCreateDescriptionFormatsDescriptionForRepository()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'repository',
+            ],
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+        ];
+
+        $expectedDescription = 'Created repository some name.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionMethod = $reflectedCode->getMethod('getCreateDescription');
+        $reflectedGetCreateDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetCreateDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Skipping create event: bad ref
+     */
+    public function testGetCreateDescriptionThrowsExceptionForBadRefType()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'bad ref',
+            ],
+        ];
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionMethod = $reflectedCode->getMethod('getCreateDescription');
+        $reflectedGetCreateDescriptionMethod->setAccessible(true);
+
+        $reflectedGetCreateDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+    }
+
+    public function testGetCreateDescriptionHtmlFormatsCreateDescriptionForBranch()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'branch',
                 'ref' => 'some ref',
             ],
             'repo' => (object) [
@@ -594,7 +748,7 @@ class CodeTest extends TestCase
         ];
 
         $expectedDescription = '';
-        $expectedDescription .= '<p>Created some type some ref at ';
+        $expectedDescription .= '<p>Created branch some ref at ';
         $expectedDescription .= '<a href="https://github.com/some name" target="_blank" title="Github | some name">';
         $expectedDescription .= 'some name</a>.</p>';
 
@@ -613,5 +767,99 @@ class CodeTest extends TestCase
         ]);
 
         $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetCreateDescriptionHtmlFormatsCreateDescriptionForTag()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'tag',
+                'ref' => 'some ref',
+            ],
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Created tag some ref at ';
+        $expectedDescription .= '<a href="https://github.com/some name" target="_blank" title="Github | some name">';
+        $expectedDescription .= 'some name</a>.</p>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionHtmlMethod = $reflectedCode->getMethod('getCreateDescriptionHtml');
+        $reflectedGetCreateDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetCreateDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetCreateDescriptionHtmlFormatsCreateDescriptionForRepository()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'repository',
+            ],
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Created repository ';
+        $expectedDescription .= '<a href="https://github.com/some name" target="_blank" title="Github | some name">';
+        $expectedDescription .= 'some name</a>.</p>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionHtmlMethod = $reflectedCode->getMethod('getCreateDescriptionHtml');
+        $reflectedGetCreateDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetCreateDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Skipping create event: bad ref
+     */
+    public function testGetCreateDescriptionHtmlThrowsExceptionForBadRefType()
+    {
+        $metadata = (object) [
+            'payload' => (object) [
+                'ref_type' => 'bad ref',
+            ],
+        ];
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetCreateDescriptionHtmlMethod = $reflectedCode->getMethod('getCreateDescriptionHtml');
+        $reflectedGetCreateDescriptionHtmlMethod->setAccessible(true);
+
+        $reflectedGetCreateDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
     }
 }
