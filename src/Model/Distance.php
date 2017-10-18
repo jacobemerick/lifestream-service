@@ -38,6 +38,18 @@ class Distance
     }
 
     /**
+     * @return array
+     */
+    public function getEntries()
+    {
+        $query = "
+            SELECT `id`, `entry_id`, `type`, `datetime`, `metadata`
+            FROM `distance`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+ 
+    /**
      * @param string $entryId
      * @param string $type
      * @param DateTime $datetime

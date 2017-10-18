@@ -168,13 +168,14 @@ switch ($opts['s']) {
         break;
     case 'code':
         $cronList = [
-            // new Fetch\Code($di),
+            new Fetch\Code($di),
             new Process\Code($di),
         ];
         break;
     case 'distance':
         $cronList = [
             new Fetch\Distance($di),
+            new Process\Code($di),
         ];
         break;
     case 'photo':
