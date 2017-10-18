@@ -616,6 +616,273 @@ class CodeTest extends TestCase
         $this->assertEquals($events, $result);
     }
 
+    public function testGetDescriptionsHandlesCreateEvents()
+    {
+        $type = 'CreateEvent';
+        $metadata = new stdclass;
+
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getCreateDescription',
+                'getCreateDescriptionHtml',
+                'getForkDescription',
+                'getForkDescriptionHtml',
+                'getPullRequestDescription',
+                'getPullRequestDescriptionHtml',
+                'getPushDescription',
+                'getPushDescriptionHtml',
+            ])
+            ->getMock();
+        $code->expects($this->once())
+            ->method('getCreateDescription')
+            ->with($metadata)
+            ->willReturn($description);
+        $code->expects($this->once())
+            ->method('getCreateDescriptionHtml')
+            ->with($metadata)
+            ->willReturn($descriptionHtml);
+        $code->expects($this->never())
+            ->method('getForkDescription');
+        $code->expects($this->never())
+            ->method('getForkDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPullRequestDescription');
+        $code->expects($this->never())
+            ->method('getPullRequestDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPushDescription');
+        $code->expects($this->never())
+            ->method('getPushDescriptionHtml');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetDescriptionsMethod = $reflectedCode->getMethod('getDescriptions');
+        $reflectedGetDescriptionsMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionsMethod->invokeArgs($code, [
+            $type,
+            $metadata,
+        ]);
+
+        $this->assertEquals([ $description, $descriptionHtml ], $result);
+    }
+
+    public function testGetDescriptionsHandlesForkEvents()
+    {
+        $type = 'ForkEvent';
+        $metadata = new stdclass;
+
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getCreateDescription',
+                'getCreateDescriptionHtml',
+                'getForkDescription',
+                'getForkDescriptionHtml',
+                'getPullRequestDescription',
+                'getPullRequestDescriptionHtml',
+                'getPushDescription',
+                'getPushDescriptionHtml',
+            ])
+            ->getMock();
+        $code->expects($this->never())
+            ->method('getCreateDescription');
+        $code->expects($this->never())
+            ->method('getCreateDescriptionHtml');
+        $code->expects($this->once())
+            ->method('getForkDescription')
+            ->with($metadata)
+            ->willReturn($description);
+        $code->expects($this->once())
+            ->method('getForkDescriptionHtml')
+            ->with($metadata)
+            ->willReturn($descriptionHtml);
+        $code->expects($this->never())
+            ->method('getPullRequestDescription');
+        $code->expects($this->never())
+            ->method('getPullRequestDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPushDescription');
+        $code->expects($this->never())
+            ->method('getPushDescriptionHtml');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetDescriptionsMethod = $reflectedCode->getMethod('getDescriptions');
+        $reflectedGetDescriptionsMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionsMethod->invokeArgs($code, [
+            $type,
+            $metadata,
+        ]);
+
+        $this->assertEquals([ $description, $descriptionHtml ], $result);
+    }
+
+    public function testGetDescriptionsHandlesPullRequestEvents()
+    {
+        $type = 'PullRequestEvent';
+        $metadata = new stdclass;
+
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getCreateDescription',
+                'getCreateDescriptionHtml',
+                'getForkDescription',
+                'getForkDescriptionHtml',
+                'getPullRequestDescription',
+                'getPullRequestDescriptionHtml',
+                'getPushDescription',
+                'getPushDescriptionHtml',
+            ])
+            ->getMock();
+        $code->expects($this->never())
+            ->method('getCreateDescription');
+        $code->expects($this->never())
+            ->method('getCreateDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getForkDescription');
+        $code->expects($this->never())
+            ->method('getForkDescriptionHtml');
+        $code->expects($this->once())
+            ->method('getPullRequestDescription')
+            ->with($metadata)
+            ->willReturn($description);
+        $code->expects($this->once())
+            ->method('getPullRequestDescriptionHtml')
+            ->with($metadata)
+            ->willReturn($descriptionHtml);
+        $code->expects($this->never())
+            ->method('getPushDescription');
+        $code->expects($this->never())
+            ->method('getPushDescriptionHtml');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetDescriptionsMethod = $reflectedCode->getMethod('getDescriptions');
+        $reflectedGetDescriptionsMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionsMethod->invokeArgs($code, [
+            $type,
+            $metadata,
+        ]);
+
+        $this->assertEquals([ $description, $descriptionHtml ], $result);
+    }
+
+    public function testGetDescriptionsHandlesPushEvents()
+    {
+        $type = 'PushEvent';
+        $metadata = new stdclass;
+
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+ 
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getCreateDescription',
+                'getCreateDescriptionHtml',
+                'getForkDescription',
+                'getForkDescriptionHtml',
+                'getPullRequestDescription',
+                'getPullRequestDescriptionHtml',
+                'getPushDescription',
+                'getPushDescriptionHtml',
+            ])
+            ->getMock();
+        $code->expects($this->never())
+            ->method('getCreateDescription');
+        $code->expects($this->never())
+            ->method('getCreateDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getForkDescription');
+        $code->expects($this->never())
+            ->method('getForkDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPullRequestDescription');
+        $code->expects($this->never())
+            ->method('getPullRequestDescriptionHtml');
+        $code->expects($this->once())
+            ->method('getPushDescription')
+            ->with($metadata)
+            ->willReturn($description);
+        $code->expects($this->once())
+            ->method('getPushDescriptionHtml')
+            ->with($metadata)
+            ->willReturn($descriptionHtml);
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetDescriptionsMethod = $reflectedCode->getMethod('getDescriptions');
+        $reflectedGetDescriptionsMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionsMethod->invokeArgs($code, [
+            $type,
+            $metadata,
+        ]);
+
+        $this->assertEquals([ $description, $descriptionHtml ], $result);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Skipping an event type: some type
+     */
+    public function testGetDescriptionsThrowsExceptionForUnknownEvents()
+    {
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getCreateDescription',
+                'getCreateDescriptionHtml',
+                'getForkDescription',
+                'getForkDescriptionHtml',
+                'getPullRequestDescription',
+                'getPullRequestDescriptionHtml',
+                'getPushDescription',
+                'getPushDescriptionHtml',
+            ])
+            ->getMock();
+        $code->expects($this->never())
+            ->method('getCreateDescription');
+        $code->expects($this->never())
+            ->method('getCreateDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getForkDescription');
+        $code->expects($this->never())
+            ->method('getForkDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPullRequestDescription');
+        $code->expects($this->never())
+            ->method('getPullRequestDescriptionHtml');
+        $code->expects($this->never())
+            ->method('getPushDescription');
+        $code->expects($this->never())
+            ->method('getPushDescriptionHtml');
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetDescriptionsMethod = $reflectedCode->getMethod('getDescriptions');
+        $reflectedGetDescriptionsMethod->setAccessible(true);
+
+        $reflectedGetDescriptionsMethod->invokeArgs($code, [
+            'some type',
+            new stdclass,
+        ]);
+    }
+
     public function testGetCreateDescriptionFormatsDescriptionForBranch()
     {
         $metadata = (object) [
