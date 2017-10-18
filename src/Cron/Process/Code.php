@@ -190,7 +190,7 @@ class Code implements CronInterface, LoggerAwareInterface
     protected function getForkDescription(stdclass $metadata)
     {
         return sprintf(
-            'Forked %s to %s',
+            'Forked %s to %s.',
             $metadata->repo->name,
             $metadata->payload->forkee->full_name
         );
@@ -225,7 +225,7 @@ class Code implements CronInterface, LoggerAwareInterface
     protected function getPullRequestDescription(stdclass $metadata)
     {
         return sprintf(
-            '%s a pull request at %s',
+            '%s a pull request at %s.',
             ucwords($metadata->payload->action),
             $metadata->repo->name
         );
@@ -276,7 +276,6 @@ class Code implements CronInterface, LoggerAwareInterface
         $description = '';
         $description .= sprintf(
             "<p>Pushed some code at <a href=\"%s\" target=\"_blank\" title=\"Github | %s\">%s</a>.</p>",
-            $metadata->payload->ref,
             "https://github.com/{$metadata->repo->name}",
             $metadata->repo->name,
             $metadata->repo->name
@@ -287,10 +286,11 @@ class Code implements CronInterface, LoggerAwareInterface
             $commitMessage = strtok($commitMessage, "\n");
             if (strlen($commitMessage) > 72) {
                 $commitMessage = wordwrap($commitMessage, 65);
+                $commitMessage = strtok($commitMessage, "\n");
                 $commitMessage .= '&hellip;';
             }
             $description .= sprintf(
-                "<li><a href=\"%s\" target=\"_blank\" title=\"Github | %s\">%s</a> %s.</li>",
+                "<li><a href=\"%s\" target=\"_blank\" title=\"Github | %s\">%s</a> %s</li>",
                 "https://github.com/{$metadata->repo->name}/commit/{$commit->sha}",
                 substr($commit->sha, 0, 7),
                 substr($commit->sha, 0, 7),

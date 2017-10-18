@@ -862,4 +862,307 @@ class CodeTest extends TestCase
             $metadata,
         ]);
     }
+
+    public function testGetForkDescriptionFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'forkee' => (object) [
+                    'full_name' => 'forked name',
+                ],
+            ],
+        ];
+
+        $expectedDescription = 'Forked some name to forked name.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetForkDescriptionMethod = $reflectedCode->getMethod('getForkDescription');
+        $reflectedGetForkDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetForkDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetForkDescriptionHtmlFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'forkee' => (object) [
+                    'full_name' => 'forked name',
+                    'html_url' => 'http://domain.com/url',
+                ],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Forked <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a> ';
+        $expectedDescription .= 'to <a href="http://domain.com/url" target="_blank" title="Github | forked name">forked name</a>.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetForkDescriptionHtmlMethod = $reflectedCode->getMethod('getForkDescriptionHtml');
+        $reflectedGetForkDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetForkDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPullRequestDescriptionFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'action' => 'opened',
+            ],
+        ];
+
+        $expectedDescription = 'Opened a pull request at some name.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPullRequestDescriptionMethod = $reflectedCode->getMethod('getPullRequestDescription');
+        $reflectedGetPullRequestDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetPullRequestDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPullRequestDescriptionHtmlFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'action' => 'opened',
+                'number' => 1,
+                'pull_request' => (object) [
+                    'html_url' => 'http://domain.com/url',
+                ],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Opened pull request <a href="http://domain.com/url" target="_blank" title="Github | some name PR 1">1</a> ';
+        $expectedDescription .= 'at <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a>.</p>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPullRequestDescriptionHtmlMethod = $reflectedCode->getMethod('getPullRequestDescriptionHtml');
+        $reflectedGetPullRequestDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetPullRequestDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPushDescriptionFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+        ];
+
+        $expectedDescription = 'Pushed some code at some name.';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPushDescriptionMethod = $reflectedCode->getMethod('getPushDescription');
+        $reflectedGetPushDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetPushDescriptionMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPushDescriptionHtmlFormatsDescription()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'commits' => [],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Pushed some code at <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a>.</p>';
+        $expectedDescription .= '<ul></ul>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPushDescriptionHtmlMethod = $reflectedCode->getMethod('getPushDescriptionHtml');
+        $reflectedGetPushDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetPushDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPushDescriptionHtmlFormatsDescriptionWithCommits()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'commits' => [
+                    (object) [
+                        'message' => 'some commit',
+                        'sha' => 'sha123',
+                    ],
+                ],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Pushed some code at <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a>.</p>';
+        $expectedDescription .= '<ul><li><a href="https://github.com/some name/commit/sha123" target="_blank" title="Github | sha123">sha123</a> some commit</li></ul>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPushDescriptionHtmlMethod = $reflectedCode->getMethod('getPushDescriptionHtml');
+        $reflectedGetPushDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetPushDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPushDescriptionHtmlFormatsDescriptionHandlesMultilineCommits()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'commits' => [
+                    (object) [
+                        'message' => "some commit\nanother line",
+                        'sha' => 'sha123',
+                    ],
+                ],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Pushed some code at <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a>.</p>';
+        $expectedDescription .= '<ul><li><a href="https://github.com/some name/commit/sha123" target="_blank" title="Github | sha123">sha123</a> some commit</li></ul>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPushDescriptionHtmlMethod = $reflectedCode->getMethod('getPushDescriptionHtml');
+        $reflectedGetPushDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetPushDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetPushDescriptionHtmlFormatsDescriptionHandlesLongCommitMessages()
+    {
+        $metadata = (object) [
+            'repo' => (object) [
+                'name' => 'some name',
+            ],
+            'payload' => (object) [
+                'commits' => [
+                    (object) [
+                        'message' => 'some commit with a long and not terribly relevant commit message that keeps going and going',
+                        'sha' => 'sha123',
+                    ],
+                ],
+            ],
+        ];
+
+        $expectedDescription = '';
+        $expectedDescription .= '<p>Pushed some code at <a href="https://github.com/some name" target="_blank" title="Github | some name">some name</a>.</p>';
+        $expectedDescription .= '<ul><li><a href="https://github.com/some name/commit/sha123" target="_blank" title="Github | sha123">sha123</a> some commit with a long and not terribly relevant commit message&hellip;</li></ul>';
+
+        $code = $this->getMockBuilder(Code::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedCode = new ReflectionClass(Code::class);
+
+        $reflectedGetPushDescriptionHtmlMethod = $reflectedCode->getMethod('getPushDescriptionHtml');
+        $reflectedGetPushDescriptionHtmlMethod->setAccessible(true);
+
+        $result = $reflectedGetPushDescriptionHtmlMethod->invokeArgs($code, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
 }
