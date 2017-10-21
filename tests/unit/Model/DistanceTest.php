@@ -68,6 +68,31 @@ class DistanceTest extends TestCase
         $this->assertSame($entry, $result);
     }
 
+    public function testGetEntriesReturnsEntries()
+    {
+        $entries = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `entry_id`, `type`, `datetime`, `metadata`
+            FROM `distance`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($entries);
+
+        $model = new Distance($mockPdo);
+        $result = $model->getEntries();
+
+        $this->assertSame($entries, $result);
+    }
+
     public function testInsertEntrySendsParams()
     {
         $entryId = '123';
