@@ -48,9 +48,17 @@ class Photo implements CronInterface, LoggerAwareInterface
                 $mediaItem['id']
             );
 
-            if ($event) {
+            if (!$event) {
+                $this->insertMedia($mediaItem);
                 continue;
             }
+
+            $mediaUpdated = $this->checkMediaUpdated($this->container->get('photoModel'), $mediaItem);
+            if ($mediaUpdated) {
+                $this->updateMedia($mediaItem);
+                continue;
+            }
+        }
 
             $mediaItemMetadata = json_decode($mediaItem['metadata']);
 
@@ -87,6 +95,59 @@ class Photo implements CronInterface, LoggerAwareInterface
     protected function fetchMedia(PhotoModel $photoModel)
     {
         return $photoModel->getMedia();
+    }
+
+    /**
+     * @param array $media
+     * @return boolean
+     */
+    protected function insertMedia(array $media)
+    {
+        $mediaMetadata = json_decode($media['metadata']);
+
+        $description = $this->getDescription($mediaMetadata);
+        $descriptionHtml = $this->getDescriptionHtml($mediaMetadata);
+
+        // todo handle likes / comments
+        try {
+            $this->insertEvent(
+                $this->container->get('eventModel'),
+                $this->container->get('typeModel'),
+                $this->container->get('userModel'),
+                $description,
+                $descriptionHtml,
+                (new DateTime($media['datetime'])),
+                (object) [],
+                'Jacob Emerick',
+                'photo',
+                $media['id']
+            );
+        } catch (Exception $exception) {
+            $this->logger->error($exception->getMessage());
+            return false;
+        }
+
+        $this->logger->debug("Added photo event: {$media['id']}");
+        return true;
+    }
+
+    /**
+     * @param PhotoModel $photoModel
+     * @param array $media
+     * @return boolean
+     */
+    protected function checkMediaUpdated(PhotoModel $photoModel, array $media)
+    {
+        return false;
+    }
+
+    /**
+     * @param array $media
+     * @return boolean
+     */
+    protected function updateMedia(array $media)
+    {
+        return true;
     }
 
     /**

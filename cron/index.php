@@ -181,6 +181,7 @@ switch ($opts['s']) {
     case 'photo':
         $cronList = [
             new Fetch\Photo($di),
+            new Process\Photo($di),
         ];
         break;
     case 'twitter':
