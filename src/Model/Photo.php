@@ -38,6 +38,18 @@ class Photo
     }
 
     /**
+     * @return array
+     */
+    public function getMedia()
+    {
+        $query = "
+            SELECT `id`, `media_id`, `datetime`, `metadata`
+            FROM `photo`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+
+    /**
      * @param string $mediaId
      * @param DateTime $datetime
      * @param string $metadata

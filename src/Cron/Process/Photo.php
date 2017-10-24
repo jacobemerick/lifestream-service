@@ -41,51 +41,7 @@ class Photo implements CronInterface, LoggerAwareInterface
             return;
         }
 
-        foreach ($media as $mediaItem) {
-            $event = $this->getEvent(
-                $this->container->get('eventModel'),
-                'photo',
-                $mediaItem['id']
-            );
-
-            if (!$event) {
-                $this->insertMedia($mediaItem);
-                continue;
-            }
-
-            $mediaUpdated = $this->checkMediaUpdated($this->container->get('photoModel'), $mediaItem);
-            if ($mediaUpdated) {
-                $this->updateMedia($mediaItem);
-                continue;
-            }
-        }
-
-            $mediaItemMetadata = json_decode($mediaItem['metadata']);
-
-            $description = $this->getDescription($mediaItemMetadata);
-            $descriptionHtml = $this->getDescriptionHtml($mediaItemMetadata);
-
-            // todo handle likes / comments
-            try {
-                $this->insertEvent(
-                    $this->container->get('eventModel'),
-                    $this->container->get('typeModel'),
-                    $this->container->get('userModel'),
-                    $description,
-                    $descriptionHtml,
-                    (new DateTime($mediaItem['datetime'])),
-                    (object) [],
-                    'Jacob Emerick',
-                    'photo',
-                    $mediaItem['id']
-                );
-            } catch (Exception $exception) {
-                $this->logger->error($exception->getMessage());
-                return;
-            }
-
-            $this->logger->debug("Added photo event: {$mediaItem['id']}");
-        }
+        array_walk($media, [ $this, 'processMedia' ]);
     }
 
     /**
@@ -97,57 +53,103 @@ class Photo implements CronInterface, LoggerAwareInterface
         return $photoModel->getMedia();
     }
 
+
     /**
      * @param array $media
      * @return boolean
      */
-    protected function insertMedia(array $media)
+    protected function processMedia(array $media)
+    {
+        $event = $this->getEvent(
+            $this->container->get('eventModel'),
+            'photo',
+            $media['id']
+        );
+
+        $metadata = $this->getMediaMetadata($media);
+
+        if (!$event) {
+            try {
+                $this->insertMedia($media, $metadata);
+            } catch (Exception $exception) {
+                $this->logger->error($exception);
+                return false;
+            }
+
+            $this->logger->debug("Added photo event: {$media['id']}");
+            return true;
+        }
+
+        $isMetadataUpdated = $this->checkMetadataUpdated($event, $metadata);
+        if ($isMetadataUpdated) {
+            try {
+                $this->updateEventMetadata(
+                    $this->container->get('eventModel'),
+                    $event['id'],
+                    $metadata
+                );
+            } catch (Exception $exception) {
+                $this->logger->error($exception);
+                return false;
+            }
+
+            $this->logger->debug("Updated photo event metadata: {$media['id']}");
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param array $media
+     * @return stdclass
+     */
+    protected function getMediaMetadata(array $media)
+    {
+        $metadata = json_decode($media['metadata']);
+
+        return (object) [
+            'likes' => $metadata->likes->count,
+            'comments' => $metadata->comments->count,
+        ];
+    }
+
+    /**
+     * @param array $media
+     * @param stdclass $metadata
+     * @return boolean
+     */
+    protected function insertMedia(array $media, stdclass $metadata)
     {
         $mediaMetadata = json_decode($media['metadata']);
 
         $description = $this->getDescription($mediaMetadata);
         $descriptionHtml = $this->getDescriptionHtml($mediaMetadata);
 
-        // todo handle likes / comments
-        try {
-            $this->insertEvent(
-                $this->container->get('eventModel'),
-                $this->container->get('typeModel'),
-                $this->container->get('userModel'),
-                $description,
-                $descriptionHtml,
-                (new DateTime($media['datetime'])),
-                (object) [],
-                'Jacob Emerick',
-                'photo',
-                $media['id']
-            );
-        } catch (Exception $exception) {
-            $this->logger->error($exception->getMessage());
-            return false;
-        }
-
-        $this->logger->debug("Added photo event: {$media['id']}");
-        return true;
+        return $this->insertEvent(
+            $this->container->get('eventModel'),
+            $this->container->get('typeModel'),
+            $this->container->get('userModel'),
+            $description,
+            $descriptionHtml,
+            (new DateTime($media['datetime'])),
+            $metadata,
+            'Jacob Emerick',
+            'photo',
+            $media['id']
+        );
     }
 
     /**
-     * @param PhotoModel $photoModel
-     * @param array $media
+     * @param array $event
+     * @param stdclass $metadata
      * @return boolean
      */
-    protected function checkMediaUpdated(PhotoModel $photoModel, array $media)
+    protected function checkMetadataUpdated(array $event, stdclass $metadata)
     {
-        return false;
-    }
+        $oldMetadata = json_decode($event['metadata']);
 
-    /**
-     * @param array $media
-     * @return boolean
-     */
-    protected function updateMedia(array $media)
-    {
-        return true;
+        return $oldMetadata != $metadata;
     }
 
     /**
