@@ -67,6 +67,31 @@ class PhotoTest extends TestCase
         $this->assertSame($media, $result);
     }
 
+    public function testGetMediaReturnsMedia()
+    {
+        $media = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `media_id`, `datetime`, `metadata`
+            FROM `photo`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($media);
+
+        $model = new Photo($mockPdo);
+        $result = $model->getMedia();
+
+        $this->assertSame($media, $result);
+    }
+
     public function testInsertMediaSendsParams()
     {
         $mediaId = '123';
