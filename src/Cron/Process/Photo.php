@@ -72,7 +72,7 @@ class Photo implements CronInterface, LoggerAwareInterface
             try {
                 $this->insertMedia($media, $metadata);
             } catch (Exception $exception) {
-                $this->logger->error($exception);
+                $this->logger->error($exception->getMessage());
                 return false;
             }
 
@@ -89,7 +89,7 @@ class Photo implements CronInterface, LoggerAwareInterface
                     $metadata
                 );
             } catch (Exception $exception) {
-                $this->logger->error($exception);
+                $this->logger->error($exception->getMessage());
                 return false;
             }
 

@@ -389,87 +389,876 @@ class PhotoTest extends TestCase
 
     public function testProcessMediaInsertsMediaIfEventNotExists()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with('Added photo event: 1');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->expects($this->never())
+            ->method('checkMetadataUpdated');
+        $photo->method('getEvent')
+            ->willReturn(false);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->once())
+            ->method('insertMedia')
+            ->with(
+                $media,
+                $mediaMetadata
+            );
+        $photo->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
     }
 
     public function testProcessMediaFailsIfInsertMediaFails()
     {
-        $this->markTestIncomplete();
+        $mockExceptionMessage = 'Failed to insert media';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $media = [
+            'id' => 1,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo($mockExceptionMessage));
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->expects($this->never())
+            ->method('checkMetadataUpdated');
+        $photo->method('getEvent')
+            ->willReturn(false);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->method('insertMedia')
+            ->will($this->throwException($mockException));
+        $photo->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $result = $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testProcessMediaReturnsTrueIfInsertMediaSucceeds()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->method('checkMetadataUpdated')
+            ->willReturn(false);
+        $photo->method('getEvent')
+            ->willReturn(false);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $result = $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testProcessMediaChecksMetadataUpdated()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->expects($this->once())
+            ->method('checkMetadataUpdated')
+            ->with(
+                $event,
+                $mediaMetadata
+            )
+            ->willReturn(false);
+        $photo->method('getEvent')
+            ->willReturn($event);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
     }
 
     public function testProcessMediaUpdatesMediaIfMetadataUpdated()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with('Updated photo event metadata: 1');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->method('checkMetadataUpdated')
+            ->willReturn(true);
+        $photo->method('getEvent')
+            ->willReturn($event);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('insertMedia');
+        $photo->expects($this->once())
+            ->method('updateEventMetadata')
+            ->with(
+                $mockEventModel,
+                $event['id'],
+                $mediaMetadata
+            );
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
     }
 
     public function testProcessMediaFailsIfUpdateMetadataFails()
     {
-        $this->markTestIncomplete();
+        $mockExceptionMessage = 'Failed to update media';
+        $mockException = new Exception($mockExceptionMessage);
+
+        $media = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->once())
+            ->method('error')
+            ->with($this->equalTo($mockExceptionMessage));
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->method('checkMetadataUpdated')
+            ->willReturn(true);
+        $photo->method('getEvent')
+            ->willReturn($event);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('insertMedia');
+        $photo->method('updateEventMetadata')
+            ->will($this->throwException($mockException));
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $result = $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testProcessMediaReturnsTrueIfUpdateMetadataSucceeds()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->method('checkMetadataUpdated')
+            ->willReturn(true);
+        $photo->method('getEvent')
+            ->willReturn($event);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('insertMedia');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $result = $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testProcessMediaReturnsFalseIfNoChangeMade()
     {
-        $this->markTestIncomplete();
+        $media = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $mediaMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getMediaMetadata',
+                'insertMedia',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $photo->method('checkMetadataUpdated')
+            ->willReturn(false);
+        $photo->method('getEvent')
+            ->willReturn($event);
+        $photo->method('getMediaMetadata')
+            ->willReturn($mediaMetadata);
+        $photo->expects($this->never())
+            ->method('insertMedia');
+        $photo->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedPhoto->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($photo, $mockLogger);
+
+        $reflectedProcessMediaMethod = $reflectedPhoto->getMethod('processMedia');
+        $reflectedProcessMediaMethod->setAccessible(true);
+
+        $result = $reflectedProcessMediaMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testGetMediaMetadataFormatsMetadata()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'likes' => (object) [
+                'count' => 2,
+            ],
+            'comments' => (object) [
+                'count' => 3,
+            ],
+        ];
+
+        $expectedMetadata = (object) [
+            'likes' => 2,
+            'comments' => 3,
+        ];
+
+        $media = [ 'metadata' => json_encode($metadata) ];
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedGetMediaMetadataMethod = $reflectedPhoto->getMethod('getMediaMetadata');
+        $reflectedGetMediaMetadataMethod->setAccessible(true);
+
+        $result = $reflectedGetMediaMetadataMethod->invokeArgs($photo, [
+            $media,
+        ]);
+
+        $this->assertEquals($expectedMetadata, $result);
     }
 
     public function testInsertMediaGetsDescription()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $media = [
+            'id' => 1,
+            'datetime' => '2016-06-30 12:00:00',
+            'metadata' => json_encode($metadata),
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+        $mockTypeModel = $this->createMock(TypeModel::class);
+        $mockUserModel = $this->createMock(UserModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+                [ 'typeModel', $mockTypeModel ],
+                [ 'userModel', $mockUserModel ],
+            ]));
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getDescription',
+                'getDescriptionHtml',
+                'insertEvent',
+            ])
+            ->getMock();
+        $photo->expects($this->once())
+            ->method('getDescription')
+            ->with($this->equalTo($metadata));
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedInsertMediaMethod = $reflectedPhoto->getMethod('insertMedia');
+        $reflectedInsertMediaMethod->setAccessible(true);
+
+        $reflectedInsertMediaMethod->invokeArgs($photo, [
+            $media,
+            $metadata,
+        ]);
     }
 
     public function testInsertMediaGetsDescriptionHtml()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $media = [
+            'id' => 1,
+            'datetime' => '2016-06-30 12:00:00',
+            'metadata' => json_encode($metadata),
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+        $mockTypeModel = $this->createMock(TypeModel::class);
+        $mockUserModel = $this->createMock(UserModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+                [ 'typeModel', $mockTypeModel ],
+                [ 'userModel', $mockUserModel ],
+            ]));
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getDescription',
+                'getDescriptionHtml',
+                'insertEvent',
+            ])
+            ->getMock();
+        $photo->expects($this->once())
+            ->method('getDescriptionHtml')
+            ->with($this->equalTo($metadata));
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedInsertMediaMethod = $reflectedPhoto->getMethod('insertMedia');
+        $reflectedInsertMediaMethod->setAccessible(true);
+
+        $reflectedInsertMediaMethod->invokeArgs($photo, [
+            $media,
+            $metadata,
+        ]);
     }
 
     public function testInsertMediaSendsParametersToInsertEvent()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $datetime = '2016-06-30 12:00:00';
+
+        $media = [
+            'id' => 1,
+            'datetime' => $datetime,
+            'metadata' => json_encode($metadata),
+        ];
+
+        $description = 'some description';
+        $descriptionHtml = '<p>some description</p>';
+
+        $expectedResponse = true;
+
+        $mockEventModel = $this->createMock(EventModel::class);
+        $mockTypeModel = $this->createMock(TypeModel::class);
+        $mockUserModel = $this->createMock(UserModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+                [ 'typeModel', $mockTypeModel ],
+                [ 'userModel', $mockUserModel ],
+            ]));
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getDescription',
+                'getDescriptionHtml',
+                'insertEvent',
+            ])
+            ->getMock();
+        $photo->method('getDescription')
+            ->willReturn($description);
+        $photo->method('getDescriptionHtml')
+            ->willReturn($descriptionHtml);
+        $photo->expects($this->once())
+            ->method('insertEvent')
+            ->with(
+                $this->equalTo($mockEventModel),
+                $this->equalTo($mockTypeModel),
+                $this->equalTo($mockUserModel),
+                $this->equalTo($description),
+                $this->equalTo($descriptionHtml),
+                $this->callback(function ($param) use ($datetime) {
+                    return $param->format('Y-m-d H:i:s') === $datetime;
+                }),
+                $this->equalTo($metadata),
+                $this->equalTo('Jacob Emerick'),
+                $this->equalTo('photo'),
+                $this->equalTo($media['id'])
+            )
+            ->willReturn($expectedResponse);
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedContainerProperty = $reflectedPhoto->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($photo, $mockContainer);
+
+        $reflectedInsertMediaMethod = $reflectedPhoto->getMethod('insertMedia');
+        $reflectedInsertMediaMethod->setAccessible(true);
+
+        $result = $reflectedInsertMediaMethod->invokeArgs($photo, [
+            $media,
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedResponse, $result);
     }
 
     public function testCheckMetadataUpdatedReturnsTrueIfDifferent()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $newMetadata = (object) [
+            'some key' => 'some other value',
+        ];
+
+        $event = [ 'metadata' => json_encode($metadata) ];
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedCheckMetadataUpdatedMethod = $reflectedPhoto->getMethod('checkMetadataUpdated');
+        $reflectedCheckMetadataUpdatedMethod->setAccessible(true);
+
+        $result = $reflectedCheckMetadataUpdatedMethod->invokeArgs($photo, [
+            $event,
+            $newMetadata,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testCheckMetadataUpdatedReturnsFalseIfSame()
     {
-        $this->markTestIncomplete();
+        $metadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $event = [ 'metadata' => json_encode($metadata) ];
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedCheckMetadataUpdatedMethod = $reflectedPhoto->getMethod('checkMetadataUpdated');
+        $reflectedCheckMetadataUpdatedMethod->setAccessible(true);
+
+        $result = $reflectedCheckMetadataUpdatedMethod->invokeArgs($photo, [
+            $event,
+            $metadata,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testSimpleTextBreaksOnNewline()
     {
-        $this->markTestIncomplete();
+        $text = "line one\nline two";
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedSimpleTextMethod = $reflectedPhoto->getMethod('simpleText');
+        $reflectedSimpleTextMethod->setAccessible(true);
+
+        $result = $reflectedSimpleTextMethod->invokeArgs($photo, [
+            $text,
+        ]);
+
+        $this->assertEquals('line one', $result);
     }
 
     public function testSimpleTextTrimsWhitespace()
     {
-        $this->markTestIncomplete();
+        $text = 'trim me ';
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedSimpleTextMethod = $reflectedPhoto->getMethod('simpleText');
+        $reflectedSimpleTextMethod->setAccessible(true);
+
+        $result = $reflectedSimpleTextMethod->invokeArgs($photo, [
+            $text,
+        ]);
+
+        $this->assertEquals('trim me', $result);
     }
 
     public function testSimpleTextHandlesSingleLine()
     {
-        $this->markTestIncomplete();
+        $text = 'simple text';
+
+        $photo = $this->getMockBuilder(Photo::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedPhoto = new ReflectionClass(Photo::class);
+
+        $reflectedSimpleTextMethod = $reflectedPhoto->getMethod('simpleText');
+        $reflectedSimpleTextMethod->setAccessible(true);
+
+        $result = $reflectedSimpleTextMethod->invokeArgs($photo, [
+            $text,
+        ]);
+
+        $this->assertEquals('simple text', $result);
     }
 
     public function testGetDescriptionCallsSimpleText()
