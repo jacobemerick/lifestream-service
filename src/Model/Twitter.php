@@ -38,6 +38,18 @@ class Twitter
     }
 
     /**
+     * @return array
+     */
+    public function getTweets()
+    {
+        $query = "
+            SELECT `id`, `tweet_id`, `datetime`, `metadata`
+            FROM `twitter`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+
+    /**
      * @param string $tweetId
      * @param DateTime $datetime
      * @param string $metadata
