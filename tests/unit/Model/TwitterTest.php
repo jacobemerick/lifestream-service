@@ -67,6 +67,31 @@ class TwitterTest extends TestCase
         $this->assertSame($tweet, $result);
     }
 
+    public function testGetTweetsReturnsTweets()
+    {
+        $tweets = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `tweet_id`, `datetime`, `metadata`
+            FROM `twitter`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($tweets);
+
+        $model = new Twitter($mockPdo);
+        $result = $model->getTweets();
+
+        $this->assertSame($tweets, $result);
+    }
+
     public function testInsertTweetSendsParams()
     {
         $tweetId = '123';
