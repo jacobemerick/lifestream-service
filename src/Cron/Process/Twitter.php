@@ -68,7 +68,11 @@ class Twitter implements CronInterface, LoggerAwareInterface
 
         $metadata = $this->getTweetMetadata($tweet);
 
-        // check if tweet is a reply - if so, ignore
+        $isReply = $this->isTweetReply($tweet);
+        if ($isReply && $metadata->favorites < 1 && $metadata->retweets < 1) {
+            $this->logger->debug("Skipping tweet, generic reply: {$tweet['id']}");
+            return false;
+        }
 
         if (!$event) {
             try {
@@ -114,6 +118,24 @@ class Twitter implements CronInterface, LoggerAwareInterface
             'favorites' => $metadata->favorite_count,
             'retweets' => $metadata->retweet_count,
         ];
+    }
+
+    /**
+     * @param array $tweet
+     * @return boolean
+     */
+    protected function isTweetReply(array $tweet)
+    {
+        $metadata = json_decode($tweet['metadata']);
+
+        if ($metadata->in_reply_to_user_id !== null) {
+            return true;
+        }
+        if (substr($metadata->text, 0, 1) === '@') {
+            return true;
+        }
+
+        return false;
     }
 
     /**
