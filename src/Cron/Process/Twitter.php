@@ -182,10 +182,31 @@ class Twitter implements CronInterface, LoggerAwareInterface
      */
     protected function getDescription(stdclass $metadata)
     {
-        // todo text needs to be single line, encoded, and links/media replaced w/ display
+        $message = $metadata->text;
+
+        $entities = array_merge(
+            $metadata->entities->urls,
+            $metadata->entities->media
+        );
+        usort($entities, function ($a, $b) {
+            return $a->indices[0] < $b->indices[0];
+        });
+
+        array_walk($entities, function ($entity) use ($message) {
+            $message = (
+                mb_substr($message, 0, $entity->indices[0]) .
+                $entity->display_url .
+                mb_substr($message, $entity->indices[1])
+            );
+        });
+
+        $message = mb_convert_encoding($message, 'HTML-ENTITIES', 'UTF-8');
+        $message = preg_replace('/\s+/', ' ', $message);
+        $message = trim($message);
+
         return sprintf(
             'Tweeted | %s',
-            $metadata->text
+            $message
         );
     }
 
