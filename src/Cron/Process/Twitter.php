@@ -184,18 +184,21 @@ class Twitter implements CronInterface, LoggerAwareInterface
     {
         $message = $metadata->text;
 
-        $entities = array_merge(
-            $metadata->entities->urls,
-            $metadata->entities->media
-        );
+        $entities = [];
+        if (isset($metadata->entities->urls)) {
+            $entities += $metadata->entities->urls;
+        }
+        if (isset($metadata->entities->media)) {
+            $entities += $metadata->entities->media;
+        }
         usort($entities, function ($a, $b) {
             return $a->indices[0] < $b->indices[0];
         });
 
-        array_walk($entities, function ($entity) use ($message) {
+        array_walk($entities, function ($entity) use (&$message) {
             $message = (
                 mb_substr($message, 0, $entity->indices[0]) .
-                $entity->display_url .
+                "[{$entity->display_url}]" .
                 mb_substr($message, $entity->indices[1])
             );
         });
