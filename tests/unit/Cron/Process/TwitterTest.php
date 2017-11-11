@@ -1011,17 +1011,86 @@ class TwitterTest extends TestCase
 
     public function testIsTweetReplyReturnsTrueIfMetadataIsReply()
     {
-        $this->markTestIncomplete();
+        $metadata = [
+            'in_reply_to_user_id' => 123,
+            'text' => 'some text',
+        ];
+
+        $tweet = [
+            'metadata' => json_encode($metadata),
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedIsTweetReplyMethod = $reflectedTwitter->getMethod('isTweetReply');
+        $reflectedIsTweetReplyMethod->setAccessible(true);
+
+        $result = $reflectedIsTweetReplyMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testIsTweetReplyReturnsTrueIfTextStartsWithSnail()
     {
-        $this->markTestIncomplete();
+        $metadata = [
+            'in_reply_to_user_id' => null,
+            'text' => '@user some text',
+        ];
+
+        $tweet = [
+            'metadata' => json_encode($metadata),
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedIsTweetReplyMethod = $reflectedTwitter->getMethod('isTweetReply');
+        $reflectedIsTweetReplyMethod->setAccessible(true);
+
+        $result = $reflectedIsTweetReplyMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
+
+        $this->assertTrue($result);
     }
 
     public function testIsTweetReplyReturnsFalseIfNotReply()
     {
-        $this->markTestIncomplete();
+        $metadata = [
+            'in_reply_to_user_id' => null,
+            'text' => 'some text',
+        ];
+
+        $tweet = [
+            'metadata' => json_encode($metadata),
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedIsTweetReplyMethod = $reflectedTwitter->getMethod('isTweetReply');
+        $reflectedIsTweetReplyMethod->setAccessible(true);
+
+        $result = $reflectedIsTweetReplyMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testInsertTweetGetsDescription()

@@ -183,17 +183,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
     protected function getDescription(stdclass $metadata)
     {
         $message = $metadata->text;
-
-        $entities = [];
-        if (isset($metadata->entities->urls)) {
-            $entities += $metadata->entities->urls;
-        }
-        if (isset($metadata->entities->media)) {
-            $entities += $metadata->entities->media;
-        }
-        usort($entities, function ($a, $b) {
-            return $a->indices[0] < $b->indices[0];
-        });
+        $entities = $this->getEntities($metadata->entities, [ 'media', 'urls' ]);
 
         array_walk($entities, function ($entity) use (&$message) {
             $message = (
@@ -211,6 +201,27 @@ class Twitter implements CronInterface, LoggerAwareInterface
             'Tweeted | %s',
             $message
         );
+    }
+
+    /**
+     * @param stdclass $tweetEntities
+     * @param array $entityTypes
+     * @return array
+     */
+    protected function getEntities(stdclass $tweetEntities, array $entityTypes)
+    {
+        $entities = [];
+        array_walk($entityTypes, function ($entityType) use ($tweetEntities, &$entities) {
+            if (isset($tweetEntities->{$entityType})) {
+                $entities += $tweetEntities->{$entityType};
+            }
+        });
+
+        usort($entities, function ($entityA, $entityB) {
+            return $entityA->indices[0] < $entityB->indices[0];
+        });
+
+        return $entities;
     }
 
     /**
