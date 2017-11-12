@@ -1328,4 +1328,367 @@ class TwitterTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    public function testGetDescriptionFetchesEntities()
+    {
+        $entities = (object) [
+            'some key' => 'some value',
+        ];
+
+        $metadata = (object) [
+            'entities' => $entities,
+            'text' => 'some text',
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getEntities',
+            ])
+            ->getMock();
+        $twitter->expects($this->once())
+            ->method('getEntities')
+            ->with(
+                $this->equalTo($entities),
+                $this->equalTo([ 'media', 'urls' ])
+            )
+            ->willReturn([]);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetDescriptionMethod = $reflectedTwitter->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
+
+        $reflectedGetDescriptionMethod->invokeArgs($twitter, [
+            $metadata,
+        ]);
+    }
+
+    public function testGetDescriptionLoopsReplacesEntitiesInText()
+    {
+        $metadata = (object) [
+            'entities' => (object) [],
+            'text' => 'the quick brown dog jumps over the lazy fox',
+        ];
+
+        $entities = [
+            (object) [
+                'indices' => [ 40, 43 ],
+                'display_url' => 'dog',
+            ],
+            (object) [
+                'indices' => [ 16, 19 ],
+                'display_url' => 'fox',
+            ],
+        ];
+
+        $expectedDescription = 'Tweeted | the quick brown [fox] jumps over the lazy [dog]';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getEntities',
+            ])
+            ->getMock();
+        $twitter->method('getEntities')
+            ->willReturn($entities);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetDescriptionMethod = $reflectedTwitter->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionMethod->invokeArgs($twitter, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetDescriptionConvertsHtmlEntities()
+    {
+        $metadata = (object) [
+            'entities' => (object) [],
+            'text' => 'some text…',
+        ];
+
+        $expectedDescription = 'Tweeted | some text&hellip;';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getEntities',
+            ])
+            ->getMock();
+        $twitter->method('getEntities')
+            ->willReturn([]);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetDescriptionMethod = $reflectedTwitter->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionMethod->invokeArgs($twitter, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetDescriptionReplacesConsecutiveWhitespaceToSingle()
+    {
+        $metadata = (object) [
+            'entities' => (object) [],
+            'text' => "some  spaced\nout\r\ntext",
+        ];
+
+        $expectedDescription = 'Tweeted | some spaced out text';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getEntities',
+            ])
+            ->getMock();
+        $twitter->method('getEntities')
+            ->willReturn([]);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetDescriptionMethod = $reflectedTwitter->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionMethod->invokeArgs($twitter, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetDescriptionTrimsTweet()
+    {
+        $metadata = (object) [
+            'entities' => (object) [],
+            'text' => 'some text with trailing whitespace ',
+        ];
+
+        $expectedDescription = 'Tweeted | some text with trailing whitespace';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'getEntities',
+            ])
+            ->getMock();
+        $twitter->method('getEntities')
+            ->willReturn([]);
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetDescriptionMethod = $reflectedTwitter->getMethod('getDescription');
+        $reflectedGetDescriptionMethod->setAccessible(true);
+
+        $result = $reflectedGetDescriptionMethod->invokeArgs($twitter, [
+            $metadata,
+        ]);
+
+        $this->assertEquals($expectedDescription, $result);
+    }
+
+    public function testGetEntitiesHandlesSingleEntity()
+    {
+        $tweetEntities = (object) [
+            'some key' => [
+                (object) [
+                    'name' => 'wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+            'some other key' => [
+                (object) [
+                    'name' => 'not wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+        ];
+
+        $entityTypes = [
+            'some key',
+        ];
+
+        $expectedEntities = [
+            (object) [
+                'name' => 'wanted',
+                'indices' => [ 0, 0 ],
+            ],
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntitiesMethod = $reflectedTwitter->getMethod('getEntities');
+        $reflectedGetEntitiesMethod->setAccessible(true);
+
+        $result = $reflectedGetEntitiesMethod->invokeArgs($twitter, [
+            $tweetEntities,
+            $entityTypes,
+        ]);
+
+        $this->assertEquals($expectedEntities, $result);
+    }
+
+    public function testGetEntitiesHandlesEmptyEntities()
+    {
+        $tweetEntities = (object) [
+            'some other key' => [
+                (object) [
+                    'name' => 'not wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+        ];
+
+        $entityTypes = [
+            'some key',
+        ];
+
+        $expectedEntities = [];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntitiesMethod = $reflectedTwitter->getMethod('getEntities');
+        $reflectedGetEntitiesMethod->setAccessible(true);
+
+        $result = $reflectedGetEntitiesMethod->invokeArgs($twitter, [
+            $tweetEntities,
+            $entityTypes,
+        ]);
+
+        $this->assertEquals($expectedEntities, $result);
+    }
+
+    public function testGetEntitiesHandlesMultipleEntities()
+    {
+        $tweetEntities = (object) [
+            'some key' => [
+                (object) [
+                    'name' => 'wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+                (object) [
+                    'name' => 'also wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+            'some other wanted key' => [
+                (object) [
+                    'name' => 'another wanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+            'some other unwanted key' => [
+                (object) [
+                    'name' => 'unwanted',
+                    'indices' => [ 0, 0 ],
+                ],
+            ],
+        ];
+
+        $entityTypes = [
+            'some key',
+            'some other wanted key',
+        ];
+
+        $expectedEntities = [
+            (object) [
+                'name' => 'wanted',
+                'indices' => [ 0, 0 ],
+            ],
+            (object) [
+                'name' => 'also wanted',
+                'indices' => [ 0, 0 ],
+            ],
+            (object) [
+                'name' => 'another wanted',
+                'indices' => [ 0, 0 ],
+            ],
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntitiesMethod = $reflectedTwitter->getMethod('getEntities');
+        $reflectedGetEntitiesMethod->setAccessible(true);
+
+        $result = $reflectedGetEntitiesMethod->invokeArgs($twitter, [
+            $tweetEntities,
+            $entityTypes,
+        ]);
+
+        $this->assertEquals($expectedEntities, $result);
+    }
+
+    public function testGetEntitiesSortsDescending()
+    {
+        $tweetEntities = (object) [
+            'some key' => [
+                (object) [
+                    'name' => 'second',
+                    'indices' => [ 1, 0 ],
+                ],
+            ],
+            'some other wanted key' => [
+                (object) [
+                    'name' => 'first',
+                    'indices' => [ 2, 0 ],
+                ],
+            ],
+        ];
+
+        $entityTypes = [
+            'some key',
+            'some other wanted key',
+        ];
+
+        $expectedEntities = [
+            (object) [
+                'name' => 'first',
+                'indices' => [ 2, 0 ],
+            ],
+            (object) [
+                'name' => 'second',
+                'indices' => [ 1, 0 ],
+            ],
+        ];
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntitiesMethod = $reflectedTwitter->getMethod('getEntities');
+        $reflectedGetEntitiesMethod->setAccessible(true);
+
+        $result = $reflectedGetEntitiesMethod->invokeArgs($twitter, [
+            $tweetEntities,
+            $entityTypes,
+        ]);
+
+        $this->assertEquals($expectedEntities, $result);
+    }
 }
