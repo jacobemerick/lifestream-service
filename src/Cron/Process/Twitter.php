@@ -213,7 +213,11 @@ class Twitter implements CronInterface, LoggerAwareInterface
         $entities = [];
         array_walk($entityTypes, function ($entityType) use ($tweetEntities, &$entities) {
             if (isset($tweetEntities->{$entityType})) {
-                $entities = array_merge($entities, $tweetEntities->{$entityType});
+                $taggedEntities = array_map(function ($entity) use ($entityType) {
+                    $entity->entity_type = $entityType;
+                    return $entity;
+                }, $tweetEntities->{$entityType});
+                $entities = array_merge($entities, $taggedEntities);
             }
         });
 

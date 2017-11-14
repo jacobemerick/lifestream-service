@@ -1520,6 +1520,7 @@ class TwitterTest extends TestCase
             (object) [
                 'name' => 'wanted',
                 'indices' => [ 0, 0 ],
+                'entity_type' => 'some key',
             ],
         ];
 
@@ -1612,14 +1613,17 @@ class TwitterTest extends TestCase
             (object) [
                 'name' => 'wanted',
                 'indices' => [ 0, 0 ],
+                'entity_type' => 'some key',
             ],
             (object) [
                 'name' => 'also wanted',
                 'indices' => [ 0, 0 ],
+                'entity_type' => 'some key',
             ],
             (object) [
                 'name' => 'another wanted',
                 'indices' => [ 0, 0 ],
+                'entity_type' => 'some other wanted key',
             ],
         ];
 
@@ -1667,10 +1671,12 @@ class TwitterTest extends TestCase
             (object) [
                 'name' => 'first',
                 'indices' => [ 2, 0 ],
+                'entity_type' => 'some other wanted key',
             ],
             (object) [
                 'name' => 'second',
                 'indices' => [ 1, 0 ],
+                'entity_type' => 'some key',
             ],
         ];
 
