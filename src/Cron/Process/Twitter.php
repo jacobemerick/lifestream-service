@@ -204,6 +204,38 @@ class Twitter implements CronInterface, LoggerAwareInterface
     }
 
     /**
+     * @param stdclass $metadata
+     * @return string
+     */
+    protected function getDescriptionHtml(stdclass $metadata)
+    {
+        $message = $metadata->text;
+
+        $entityTypes = [
+            'hashtags',
+            'media',
+            'urls',
+            'user_mentions',
+        ];
+        $entities = $this->getEntities($metadata->entities, $entityTypes);
+
+        $self = $this;
+        array_walk($entities, function ($entity) use (&$message, $self) {
+            $message = (
+                mb_substr($message, 0, $entity->indices[0]) .
+                $self->getEntityReplacement($entity, $entity->entity_type) .
+                mb_substr($message, $entity->indices[1])
+            );
+        });
+
+        $message = mb_convert_encoding($message, 'HTML-ENTITIES', 'UTF-8');
+        $message = nl2br($message);
+        $message = "<p>{$message}</p>";
+
+        return $message;
+    }
+
+    /**
      * @param stdclass $tweetEntities
      * @param array $entityTypes
      * @return array
@@ -229,13 +261,32 @@ class Twitter implements CronInterface, LoggerAwareInterface
     }
 
     /**
-     * @param stdclass $metadata
+     * @param stdclass $entity
+     * @param string $entityType
      * @return string
      */
-    protected function getDescriptionHtml(stdclass $metadata)
+    protected function getEntityReplacement(stdclass $entity, $entityType)
     {
-        $description = '';
-        // whole bunch of stuff
-        return $description;
+        $replacement = '';
+
+        switch ($entityType) {
+            case 'hashtags':
+                $replacement = 'hashtag';
+                break;
+            case 'media':
+                $replacement = 'media';
+                break;
+            case 'urls':
+                $replacement = 'urls';
+                break;
+            case 'user_mentions':
+                $replacement = 'user_mentions';
+                break;
+            default:
+                throw new Exception("Cannot determine an acceptable replacement for {$entityType}");
+                break;
+        }
+
+        return $replacement;
     }
 }
