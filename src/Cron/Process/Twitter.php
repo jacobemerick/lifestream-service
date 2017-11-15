@@ -271,16 +271,37 @@ class Twitter implements CronInterface, LoggerAwareInterface
 
         switch ($entityType) {
             case 'hashtags':
-                $replacement = 'hashtag';
+                $replacement = sprintf(
+                    '<a href="https://twitter.com/hashtag/%s?src=hash" rel="nofollow" target="_blank">#%s</a>',
+                    $entity->text,
+                    $entity->text
+                );
                 break;
             case 'media':
-                $replacement = 'media';
+                $replacement = sprintf(
+                    '<img src="%s:%s" alt="Twitter Media | %s" height="%s" width="%s" />',
+                    $entity->media_url_https,
+                    'large',
+                    $entity->display_url,
+                    $entity->sizes->large->h,
+                    $entity->sizes->large->w
+                );
                 break;
             case 'urls':
-                $replacement = 'urls';
+                $replacement = sprintf(
+                    '<a href="%s" rel="nofollow" target="_blank" title="%s">%s</a>',
+                    $entity->url,
+                    $entity->expanded_url,
+                    $entity->display_url
+                );
                 break;
             case 'user_mentions':
-                $replacement = 'user_mentions';
+                $replacement = sprintf(
+                    '<a href="https://twitter.com/%s" rel="nofollow" target="_blank" title="Twitter | %s">@%s</a>',
+                    $entity['screen_name'],
+                    $entity['name'],
+                    $entity['screen_name']
+                );
                 break;
             default:
                 throw new Exception("Cannot determine an acceptable replacement for {$entityType}");
