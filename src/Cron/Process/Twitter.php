@@ -298,9 +298,9 @@ class Twitter implements CronInterface, LoggerAwareInterface
             case 'user_mentions':
                 $replacement = sprintf(
                     '<a href="https://twitter.com/%s" rel="nofollow" target="_blank" title="Twitter | %s">@%s</a>',
-                    $entity['screen_name'],
-                    $entity['name'],
-                    $entity['screen_name']
+                    $entity->screen_name,
+                    $entity->name,
+                    $entity->screen_name
                 );
                 break;
             default:
