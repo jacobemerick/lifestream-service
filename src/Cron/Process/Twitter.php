@@ -229,7 +229,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
         });
 
         $message = mb_convert_encoding($message, 'HTML-ENTITIES', 'UTF-8');
-        $message = nl2br($message);
+        $message = str_replace([ "\r\n", "\r", "\n" ], '<br />', $message);
         $message = "<p>{$message}</p>";
 
         return $message;
