@@ -396,22 +396,288 @@ class TwitterTest extends TestCase
 
     public function testProcessTweetChecksIfTweetIsReply()
     {
-        $this->markTestIncomplete();
+        $tweet = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $tweetMetadata = (object) [
+            'some key' => 'some value',
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getTweetMetadata',
+                'insertTweet',
+                'isTweetReply',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $twitter->method('checkMetadataUpdated')
+            ->willReturn(false);
+        $twitter->method('getEvent')
+            ->willReturn($event);
+        $twitter->method('getTweetMetadata')
+            ->willReturn($tweetMetadata);
+        $twitter->expects($this->never())
+            ->method('insertTweet');
+        $twitter->expects($this->once())
+            ->method('isTweetReply')
+            ->with($tweet)
+            ->willReturn(false);
+        $twitter->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedContainerProperty = $reflectedTwitter->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($twitter, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
     }
 
     public function testProcessTweetSkipsTweetIfReplyAndHasNoInteraction()
     {
-        $this->markTestIncomplete();
+        $tweet = [
+            'id' => 1,
+        ];
+
+        $tweetMetadata = (object) [
+            'favorites' => 0,
+            'retweets' => 0,
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->once())
+            ->method('debug')
+            ->with('Skipping tweet, generic reply: 1');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getTweetMetadata',
+                'insertTweet',
+                'isTweetReply',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $twitter->expects($this->never())
+            ->method('checkMetadataUpdated');
+        $twitter->method('getEvent')
+            ->willReturn(false);
+        $twitter->method('getTweetMetadata')
+            ->willReturn($tweetMetadata);
+        $twitter->expects($this->never())
+            ->method('insertTweet');
+        $twitter->method('isTweetReply')
+            ->willReturn(true);
+        $twitter->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedContainerProperty = $reflectedTwitter->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($twitter, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $result = $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
+
+        $this->assertFalse($result);
     }
 
     public function testProcessTweetContinuesIfReplyAndHasFavorites()
     {
-        $this->markTestIncomplete();
+        $tweet = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $tweetMetadata = (object) [
+            'favorites' => 1,
+            'retweets' => 0,
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getTweetMetadata',
+                'insertTweet',
+                'isTweetReply',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $twitter->expects($this->once())
+            ->method('checkMetadataUpdated')
+            ->willReturn(false);
+        $twitter->method('getEvent')
+            ->willReturn($event);
+        $twitter->method('getTweetMetadata')
+            ->willReturn($tweetMetadata);
+        $twitter->expects($this->never())
+            ->method('insertTweet');
+        $twitter->method('isTweetReply')
+            ->willReturn(true);
+        $twitter->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedContainerProperty = $reflectedTwitter->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($twitter, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
     }
 
     public function testProcessTweetContinuesIfReplyAndHasRetweets()
     {
-        $this->markTestIncomplete();
+        $tweet = [
+            'id' => 1,
+        ];
+
+        $event = [
+            'id' => 2,
+        ];
+
+        $tweetMetadata = (object) [
+            'favorites' => 0,
+            'retweets' => 1,
+        ];
+
+        $mockEventModel = $this->createMock(EventModel::class);
+
+        $mockContainer = $this->createMock(Container::class);
+        $mockContainer->method('get')
+            ->will($this->returnValueMap([
+                [ 'eventModel', $mockEventModel ],
+            ]));
+
+        $mockLogger = $this->createMock(Logger::class);
+        $mockLogger->expects($this->never())
+            ->method('debug');
+        $mockLogger->expects($this->never())
+            ->method('error');
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods([
+                'checkMetadataUpdated',
+                'getEvent',
+                'getTweetMetadata',
+                'insertTweet',
+                'isTweetReply',
+                'updateEventMetadata',
+            ])
+            ->getMock();
+        $twitter->expects($this->once())
+            ->method('checkMetadataUpdated')
+            ->willReturn(false);
+        $twitter->method('getEvent')
+            ->willReturn($event);
+        $twitter->method('getTweetMetadata')
+            ->willReturn($tweetMetadata);
+        $twitter->expects($this->never())
+            ->method('insertTweet');
+        $twitter->method('isTweetReply')
+            ->willReturn(true);
+        $twitter->expects($this->never())
+            ->method('updateEventMetadata');
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedContainerProperty = $reflectedTwitter->getProperty('container');
+        $reflectedContainerProperty->setAccessible(true);
+        $reflectedContainerProperty->setValue($twitter, $mockContainer);
+
+        $reflectedLoggerProperty = $reflectedTwitter->getProperty('logger');
+        $reflectedLoggerProperty->setAccessible(true);
+        $reflectedLoggerProperty->setValue($twitter, $mockLogger);
+
+        $reflectedProcessTweetMethod = $reflectedTwitter->getMethod('processTweet');
+        $reflectedProcessTweetMethod->setAccessible(true);
+
+        $reflectedProcessTweetMethod->invokeArgs($twitter, [
+            $tweet,
+        ]);
     }
 
     public function testProcessTweetInsertsTweetIfEventNotExists()
@@ -1889,5 +2155,154 @@ class TwitterTest extends TestCase
         ]);
 
         $this->assertEquals($expectedEntities, $result);
+    }
+
+    public function testGetEntityReplacementHandlesHashtags()
+    {
+        $entity = (object) [
+            'text' => 'awesome',
+        ];
+        $entityType = 'hashtags';
+
+        $expectedReplacement = '';
+        $expectedReplacement .= '<a href="https://twitter.com/hashtag/awesome?src=hash" rel="nofollow"';
+        $expectedReplacement .= ' target="_blank">#awesome</a>';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntityReplacementMethod = $reflectedTwitter->getMethod('getEntityReplacement');
+        $reflectedGetEntityReplacementMethod->setAccessible(true);
+
+        $result = $reflectedGetEntityReplacementMethod->invokeArgs($twitter, [
+            $entity,
+            $entityType,
+        ]);
+
+        $this->assertEquals($expectedReplacement, $result);
+    }
+
+    public function testGetEntityReplacementHandlesMedia()
+    {
+        $entity = (object) [
+            'media_url_https' => 'secure_media_url',
+            'display_url' => 'pretty_url',
+            'sizes' => (object) [
+                'large' => (object) [
+                    'h' => 480,
+                    'w' => 640,
+                ],
+            ],
+        ];
+        $entityType = 'media';
+
+        $expectedReplacement = '';
+        $expectedReplacement .= '<img src="secure_media_url:large" alt="Twitter Media | pretty_url"';
+        $expectedReplacement .= ' height="480" width="640" />';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntityReplacementMethod = $reflectedTwitter->getMethod('getEntityReplacement');
+        $reflectedGetEntityReplacementMethod->setAccessible(true);
+
+        $result = $reflectedGetEntityReplacementMethod->invokeArgs($twitter, [
+            $entity,
+            $entityType,
+        ]);
+
+        $this->assertEquals($expectedReplacement, $result);
+    }
+
+    public function testGetEntityReplacementHandlesUrls()
+    {
+        $entity = (object) [
+            'url' => 'base_url',
+            'expanded_url' => 'longer_url',
+            'display_url' => 'pretty_url',
+        ];
+        $entityType = 'urls';
+
+        $expectedReplacement = '<a href="base_url" rel="nofollow" target="_blank" title="longer_url">pretty_url</a>';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntityReplacementMethod = $reflectedTwitter->getMethod('getEntityReplacement');
+        $reflectedGetEntityReplacementMethod->setAccessible(true);
+
+        $result = $reflectedGetEntityReplacementMethod->invokeArgs($twitter, [
+            $entity,
+            $entityType,
+        ]);
+
+        $this->assertEquals($expectedReplacement, $result);
+    }
+
+    public function testGetEntityReplacementHandlesUserMentions()
+    {
+        $entity = (object) [
+            'screen_name' => 'screen',
+            'name' => 'some name',
+        ];
+        $entityType = 'user_mentions';
+
+        $expectedReplacement = '';
+        $expectedReplacement .= '<a href="https://twitter.com/screen" rel="nofollow" target="_blank"';
+        $expectedReplacement .= ' title="Twitter | some name">@screen</a>';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntityReplacementMethod = $reflectedTwitter->getMethod('getEntityReplacement');
+        $reflectedGetEntityReplacementMethod->setAccessible(true);
+
+        $result = $reflectedGetEntityReplacementMethod->invokeArgs($twitter, [
+            $entity,
+            $entityType,
+        ]);
+
+        $this->assertEquals($expectedReplacement, $result);
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Cannot determine an acceptable replacement for some type
+     */
+    public function testGetEntityReplacementThrowsExceptionOnRecognizedEntityType()
+    {
+        $entity = new stdclass();
+        $entityType = 'some type';
+
+        $twitter = $this->getMockBuilder(Twitter::class)
+            ->disableOriginalConstructor()
+            ->setMethods()
+            ->getMock();
+
+        $reflectedTwitter = new ReflectionClass(Twitter::class);
+
+        $reflectedGetEntityReplacementMethod = $reflectedTwitter->getMethod('getEntityReplacement');
+        $reflectedGetEntityReplacementMethod->setAccessible(true);
+
+        $reflectedGetEntityReplacementMethod->invokeArgs($twitter, [
+            $entity,
+            $entityType,
+        ]);
     }
 }

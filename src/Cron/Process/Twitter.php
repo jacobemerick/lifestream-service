@@ -279,7 +279,7 @@ class Twitter implements CronInterface, LoggerAwareInterface
                 break;
             case 'media':
                 $replacement = sprintf(
-                    '<img src="%s:%s" alt="Twitter Media | %s" height="%s" width="%s" />',
+                    '<img src="%s:%s" alt="Twitter Media | %s" height="%d" width="%d" />',
                     $entity->media_url_https,
                     'large',
                     $entity->display_url,
