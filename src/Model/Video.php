@@ -38,6 +38,18 @@ class Video
     }
 
     /**
+     * @return array
+     */
+    public function getVideos()
+    {
+        $query = "
+            SELECT `id`, `video_id`, `datetime`, `metadata`
+            FROM `video`";
+
+        return $this->extendedPdo->fetchAll($query);
+    }
+
+    /**
      * @param string $videoId
      * @param DateTime $datetime
      * @param string $metadata
