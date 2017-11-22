@@ -87,10 +87,10 @@ class Video implements CronInterface, LoggerAwareInterface
      */
     protected function insertVideo(array $video)
     {
-        $videoMetadata = json_decode($video['metadata']);
+        $metadata = json_decode($video['metadata']);
 
-        $description = $this->getDescription($videoMetadata);
-        $descriptionHtml = $this->getDescriptionHtml($videoMetadata);
+        $description = $this->getDescription($metadata);
+        $descriptionHtml = $this->getDescriptionHtml($metadata);
 
         return $this->insertEvent(
             $this->container->get('eventModel'),
@@ -99,7 +99,7 @@ class Video implements CronInterface, LoggerAwareInterface
             $description,
             $descriptionHtml,
             (new DateTime($video['datetime'])),
-            $metadata,
+            (object) [],
             'Jacob Emerick',
             'video',
             $video['id']

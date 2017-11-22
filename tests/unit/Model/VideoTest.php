@@ -67,6 +67,31 @@ class VideoTest extends TestCase
         $this->assertSame($video, $result);
     }
 
+    public function testGetVideosReturnsVideos()
+    {
+        $videos = [
+            [ 'id' => 1 ],
+            [ 'id' => 2 ],
+        ];
+
+        $query = "
+            SELECT `id`, `video_id`, `datetime`, `metadata`
+            FROM `video`";
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchAll')
+            ->with(
+                $this->equalTo($query)
+            )
+            ->willReturn($videos);
+
+        $model = new Video($mockPdo);
+        $result = $model->getVideos();
+
+        $this->assertSame($videos, $result);
+    }
+
     public function testInsertVideoSendsParams()
     {
         $videoId = '123';
