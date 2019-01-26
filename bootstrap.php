@@ -90,6 +90,9 @@ use Jacobemerick\LifestreamService\Controller;
 $talus->addController('getEvent', function ($req, $res) use ($di) {
     return (new Controller\Event($di))->getEvent($req, $res);
 });
+$talus->addController('getEvents', function ($req, $res) use ($di) {
+    return (new Controller\Event($di))->getEvents($req, $res);
+});
 
 $talus->addController('getTypes', function ($req, $res) use ($di) {
     return (new Controller\Type($di))->getTypes($req, $res);

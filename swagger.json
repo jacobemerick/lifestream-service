@@ -177,18 +177,21 @@
             "name": "page",
             "in": "query",
             "description": "Results page to return",
+            "default": 1,
             "type": "integer"
         },
         "PageSize": {
             "name": "per_page",
             "in": "query",
             "description": "Results per response",
+            "default": 10,
             "type": "integer"
         },
         "SortOrder": {
             "name": "order",
             "in": "query",
             "description": "Comma-separated list of order options",
+            "default": "date",
             "type": "string"
         },
         "TypeFilter": {
