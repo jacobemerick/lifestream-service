@@ -71,6 +71,29 @@ class Event
     }
 
     /**
+     * @param integer $id
+     * @return array
+     */
+    public function findById($id) {
+        $query = "
+            SELECT `event`.`id`, `description`, `description_html`, `datetime`, `metadata`,
+                   `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
+                   `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
+            FROM `event`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
+            WHERE `event`.`id` = :id
+            LIMIT 1";
+
+        $bindings = [
+            'id' => $id
+        ];
+
+        return $this->extendedPdo->fetchOne($query, $bindings);
+    }
+
+
+    /**
      * @param string $type
      * @param integer $typeId
      * @return array

@@ -43,9 +43,11 @@ $di->set('dbal', $di->lazyNew(
 ));
 $di->types['Aura\Sql\ExtendedPdo'] = $di->lazyGet('dbal');
 
+$di->set('eventModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Event'));
 $di->set('typeModel', $di->lazyNew('Jacobemerick\LifestreamService\Model\Type'));
 
 // set up serializers
+$di->set('eventSerializer', $di->lazyNew('Jacobemerick\LifestreamService\Serializer\Event'));
 $di->set('typeSerializer', $di->lazyNew('Jacobemerick\LifestreamService\Serializer\Type'));
 
 // set up logger
@@ -84,6 +86,10 @@ $talus->setLogger($di->get('logger'));
 
 // controllers
 use Jacobemerick\LifestreamService\Controller;
+
+$talus->addController('getEvent', function ($req, $res) use ($di) {
+    return (new Controller\Event($di))->getEvent($req, $res);
+});
 
 $talus->addController('getTypes', function ($req, $res) use ($di) {
     return (new Controller\Type($di))->getTypes($req, $res);
