@@ -2,6 +2,7 @@
 
 namespace Jacobemerick\LifestreamService\Controller;
 
+use AvalancheDevelopment\Peel\HttpError\NotFound;
 use Interop\Container\ContainerInterface as Container;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;

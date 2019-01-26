@@ -240,6 +240,51 @@ class EventTest extends TestCase
         $this->assertSame($types, $result);
     }
 
+    public function testFindByIdSendsParams()
+    {
+        $eventId = 123;
+
+        $query = "
+            SELECT `event`.`id`, `description`, `description_html`, `datetime`, `metadata`,
+                   `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
+                   `type`.`id` AS `type_id`, `type`.`name` AS `type_name`
+            FROM `event`
+            INNER JOIN `user` ON `user`.`id` = `event`.`user_id`
+            INNER JOIN `type` ON `type`.`id` = `event`.`type_id`
+            WHERE `event`.`id` = :id
+            LIMIT 1";
+        $bindings = [
+            'id' => $eventId,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->expects($this->once())
+            ->method('fetchOne')
+            ->with(
+                $this->equalTo($query),
+                $this->equalTo($bindings)
+            );
+
+        $model = new Event($mockPdo);
+        $model->findById($eventId);
+    }
+
+    public function testFindByIdReturnsEvent()
+    {
+        $event = [
+            'id' => 123,
+        ];
+
+        $mockPdo = $this->createMock(ExtendedPdo::class);
+        $mockPdo->method('fetchOne')
+            ->willReturn($event);
+
+        $model = new Event($mockPdo);
+        $result = $model->findById(null);
+
+        $this->assertSame($event, $result);
+    }
+
     public function testGetEventByTypeIdSendsParams()
     {
         $type = 'type';

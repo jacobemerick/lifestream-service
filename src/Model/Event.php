@@ -74,7 +74,8 @@ class Event
      * @param integer $id
      * @return array
      */
-    public function findById($id) {
+    public function findById($id)
+    {
         $query = "
             SELECT `event`.`id`, `description`, `description_html`, `datetime`, `metadata`,
                    `user`.`id` AS `user_id`, `user`.`name` AS `user_name`,
