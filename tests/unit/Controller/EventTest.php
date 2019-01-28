@@ -597,7 +597,7 @@ class EventTest extends TestCase
             ->method('__invoke')
             ->withConsecutive(
                 [ $this->equalTo($mockEvents[0]) ],
-                [ $this->equalTo($mockEvents[1]) ],
+                [ $this->equalTo($mockEvents[1]) ]
             );
 
         $mockContainer = $this->createMock(Container::class);
